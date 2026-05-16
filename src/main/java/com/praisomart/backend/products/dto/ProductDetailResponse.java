@@ -8,7 +8,7 @@ public class ProductDetailResponse {
     private String name;
     private String description;
     private String color;
-    private List<String> images;
+    private List<ImageResponse> images;
     private Double price;
     private String categoryName;
     private List<String> availableColors;
@@ -17,7 +17,7 @@ public class ProductDetailResponse {
     // ✅ Constructor (correct order)
     public ProductDetailResponse(Long id, String name, String description,
                                      String color, Double price, String categoryName, 
-                                     List<String> availableColors, List<String> images,
+                                     List<String> availableColors, List<ImageResponse> images,
                                  List<VariantResponse> variants) {
         this.id = id;
         this.name = name;
@@ -54,8 +54,8 @@ public class ProductDetailResponse {
     public String getColor() { return color; }
     public void setColor(String color) { this.color = color; }
 
-    public List<String> getImages() { return images; }
-    public void setImages(List<String> images) { this.images = images; }
+    public List<ImageResponse> getImages() { return images; }
+    public void setImages(List<ImageResponse> images) { this.images = images; }
 
     public List<VariantResponse> getVariants() { return variants; }
     public void setVariants(List<VariantResponse> variants) { this.variants = variants; }

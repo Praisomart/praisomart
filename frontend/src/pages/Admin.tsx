@@ -187,9 +187,41 @@ const Admin = () => {
     }
   };
 
+  const colorMap: Record<string, string> = {
+    "orange": "#D35400",
+    "maroon": "#7B1113",
+    "green": "#2D5A27",
+    "grey": "#4A4A4A",
+    "yellow": "#B8860B",
+    "brown": "#5D4037",
+    "blue": "#1B2631",
+  };
+
+  const ColorPicker = ({ value, onChange }: { value: string, onChange: (val: string) => void }) => (
+    <div className="flex flex-wrap gap-2 items-center">
+      {Object.keys(colorMap).map(colorName => (
+        <button
+          key={colorName}
+          type="button"
+          onClick={() => onChange(colorName)}
+          className={`w-6 h-6 rounded-full border-2 transition-all hover:scale-110 ${value.toLowerCase() === colorName ? 'border-primary ring-2 ring-primary/20 scale-110' : 'border-transparent'}`}
+          style={{ backgroundColor: colorMap[colorName] }}
+          title={colorName}
+        />
+      ))}
+      <input 
+        placeholder="Custom"
+        className="w-24 px-2 py-1 text-[10px] rounded border bg-background"
+        value={value}
+        onChange={e => onChange(e.target.value)}
+      />
+    </div>
+  );
+
   const filteredProducts = productsData?.content?.filter((p: any) => 
     p.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-    p.id.toString().includes(searchQuery)
+    p.id.toString().includes(searchQuery) ||
+    p.availableColors?.some((c: string) => c.toLowerCase().includes(searchQuery.toLowerCase()))
   );
 
   return (
@@ -390,13 +422,12 @@ const Admin = () => {
                       </div>
                       <div className="space-y-3">
                         <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Color Variant</label>
-                        <input 
-                          required
-                          placeholder="e.g. Midnight Blue"
-                          className="w-full px-5 py-4 rounded-2xl border bg-background focus:ring-2 focus:ring-primary/20 transition-all outline-none"
-                          value={productData.color}
-                          onChange={e => setProductData({...productData, color: e.target.value})}
-                        />
+                        <div className="px-5 py-3 rounded-2xl border bg-background flex items-center min-h-[60px]">
+                          <ColorPicker 
+                            value={productData.color}
+                            onChange={val => setProductData({...productData, color: val})}
+                          />
+                        </div>
                       </div>
                     </div>
 
@@ -440,12 +471,12 @@ const Admin = () => {
                             </div>
                             <div className="space-y-1">
                               <span className="text-[10px] font-bold text-muted-foreground ml-2">COLOR</span>
-                              <input 
-                                placeholder="e.g. orange (or leave empty)"
-                                className="w-full px-4 py-3 rounded-xl border bg-background text-sm"
-                                value={v.color}
-                                onChange={e => handleVariantChange(i, "color", e.target.value)}
-                              />
+                              <div className="px-4 py-2 rounded-xl border bg-background min-h-[48px] flex items-center">
+                                <ColorPicker 
+                                  value={v.color}
+                                  onChange={val => handleVariantChange(i, "color", val)}
+                                />
+                              </div>
                             </div>
                             <div className="space-y-1">
                               <span className="text-[10px] font-bold text-muted-foreground ml-2">PRICE (₹)</span>
@@ -645,16 +676,16 @@ const Admin = () => {
                                       <X size={12} />
                                     </button>
                                     <div className="absolute bottom-2 left-2 right-2 flex gap-1">
-                                      <input 
-                                        placeholder="Variant Color"
-                                        className="w-full bg-black/60 text-white text-[10px] px-2 py-1 rounded border-none outline-none placeholder:text-white/50"
-                                        value={img.color}
-                                        onChange={(e) => {
-                                          const newGallery = [...productData.galleryImages];
-                                          newGallery[i].color = e.target.value;
-                                          setProductData({ ...productData, galleryImages: newGallery });
-                                        }}
-                                      />
+                                      <div className="w-full bg-black/60 p-1.5 rounded backdrop-blur-md">
+                                        <ColorPicker 
+                                          value={img.color}
+                                          onChange={val => {
+                                            const newGallery = [...productData.galleryImages];
+                                            newGallery[i].color = val;
+                                            setProductData({ ...productData, galleryImages: newGallery });
+                                          }}
+                                        />
+                                      </div>
                                     </div>
                                   </div>
                                 </div>
@@ -739,6 +770,17 @@ const Admin = () => {
                               <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md ${product.inStock ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
                                 {product.inStock ? 'IN STOCK' : 'OUT OF STOCK'}
                               </span>
+                              {/* Color Variants Visibility */}
+                              <div className="flex gap-1 ml-2 border-l pl-3 border-muted">
+                                {product.availableColors?.map((c: string, idx: number) => (
+                                  <div 
+                                    key={idx} 
+                                    className="w-3 h-3 rounded-full border border-black/10 shadow-sm" 
+                                    style={{ backgroundColor: colorMap[c.toLowerCase().trim()] || c }}
+                                    title={c}
+                                  />
+                                ))}
+                              </div>
                             </div>
                           </div>
                         </div>
@@ -808,7 +850,6 @@ const Admin = () => {
                     }}
                     className="mb-12 p-8 bg-primary/5 rounded-[2rem] border border-primary/10 space-y-6"
                   >
-                    <h4 className="font-bold text-lg mb-2">Define New Department</h4>
                     <div className="grid grid-cols-2 gap-6">
                       <div className="space-y-2">
                         <label className="text-[10px] font-bold text-muted-foreground ml-1">NAME</label>
@@ -852,8 +893,15 @@ const Admin = () => {
                     {categoriesData?.map((cat: any) => (
                       <div key={cat.id} className="flex items-center justify-between p-5 border rounded-[2rem] bg-background hover:shadow-lg transition-all group">
                         <div className="flex items-center gap-5">
-                          <div className="w-16 h-16 rounded-2xl overflow-hidden shadow-sm group-hover:scale-105 transition-transform duration-500">
-                            <img src={cat.imageUrl} alt={cat.name} className="w-full h-full object-cover" />
+                          <div className="w-16 h-16 rounded-2xl overflow-hidden shadow-sm group-hover:scale-105 transition-transform duration-500 bg-muted flex items-center justify-center">
+                            <img 
+                              src={cat.imageUrl || '/placeholder.svg'} 
+                              alt={cat.name} 
+                              className="w-full h-full object-cover" 
+                              onError={(e) => {
+                                (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1523381210434-271e8be1f52b?auto=format&fit=crop&q=80';
+                              }}
+                            />
                           </div>
                           <div>
                             <p className="font-bold text-lg">{cat.name}</p>

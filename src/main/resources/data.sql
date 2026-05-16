@@ -1,7 +1,8 @@
 -- Categories
-INSERT INTO categories (name, description, is_active, created_at, updated_at) VALUES ('Sarees', 'Exquisite traditional sarees', true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
-INSERT INTO categories (name, description, is_active, created_at, updated_at) VALUES ('Fabrics', 'Premium textile materials', true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
-INSERT INTO categories (name, description, is_active, created_at, updated_at) VALUES ('Silk Collection', 'Pure silk and pattu collections', true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
+INSERT INTO categories (name, description, image_url, is_active, created_at, updated_at) VALUES ('Sarees', 'Exquisite traditional sarees including Silk, Cotton, and Designer collections for every occasion.', '/images/categories/sarees.png', true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
+INSERT INTO categories (name, description, image_url, is_active, created_at, updated_at) VALUES ('Fabrics', 'Premium unstitched textile materials, from pure cotton to luxury brocades for bespoke tailoring.', '/images/categories/fabrics.png', true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
+INSERT INTO categories (name, description, image_url, is_active, created_at, updated_at) VALUES ('Silk Collection', 'Pure Mulberry and Kanchipuram silk pattu collections featuring intricate zari work.', '/images/categories/silk.png', true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
+INSERT INTO categories (name, description, image_url, is_active, created_at, updated_at) VALUES ('Blouse Pieces', 'Beautiful unstitched blouse materials with vibrant prints and ethnic embroidery patterns.', '/images/categories/blouse.png', true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
 
 -- Products
 INSERT INTO products (name, description, category_id, is_active, color) VALUES ('Kanchipuram Silk Saree', 'Handwoven traditional Kanchipuram silk saree with gold zari', 1, true, 'Emerald Green');
@@ -18,9 +19,6 @@ INSERT INTO product_variants (product_id, attribute, price, stock, is_active, sk
 -- Users (Admin)
 INSERT INTO paisomart_auth.users (name, email, phone_number, password, role, created_at) VALUES ('Admin', 'admin@praisomart.com', '9999999999', '$2a$10$Bmx9CZadK05j0/WWxZXxlusD24hKmqxlaHB.v6YcN.zDkQFOkHvAq', 'ADMIN', CURRENT_TIMESTAMP);
 -- Password is 'Admin@123'
-
--- New Category: Blouse Pieces (Category ID 4)
-INSERT INTO categories (name, description, is_active, created_at, updated_at) VALUES ('Blouse Pieces', 'Beautiful unstitched blouse materials', true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
 
 -- Single Blouse Piece Product
 INSERT INTO products (name, description, category_id, is_active, color) VALUES ('2 Meter Blouse Piece', 'VIBRANT FLORAL PRINT: Features a stunning multicolour floral pattern base, adding a bold and ethnic charm to your wardrobe.

@@ -29,14 +29,14 @@ const ProductDetail = () => {
   });
 
   const colorMap: Record<string, string> = {
-    "orange": "#FF8C00",
-    "maroon": "#800000",
-    "green": "#228B22",
-    "grey": "#808080",
-    "yellow": "#FFD700",
-    "brown": "#8B4513",
-    "blue": "#0000FF",
-    "multi": "linear-gradient(to right, red, orange, yellow, green, blue, indigo, violet)"
+    "orange": "#D35400", // Burnt Orange
+    "maroon": "#7B1113", // Ruby Wine
+    "green": "#2D5A27",  // Forest Green
+    "grey": "#4A4A4A",   // Charcoal Grey
+    "yellow": "#B8860B", // Antique Gold
+    "brown": "#5D4037",  // Coffee Brown
+    "blue": "#1B2631",   // Midnight Blue
+    "multi": "linear-gradient(135deg, #FF6B6B, #4ECDC4, #FFE66D)"
   };
   
   if (isLoading) {
@@ -114,12 +114,12 @@ const ProductDetail = () => {
   };
 
   const currentVariant = selectedColor 
-    ? productData.variants?.find((v: any) => v.color === selectedColor)
+    ? productData.variants?.find((v: any) => v.color?.toLowerCase().trim() === selectedColor.toLowerCase().trim())
     : productData.variants?.[0];
 
   const currentImage = selectedColor
-    ? productData.images?.find((img: any) => img.color === selectedColor)?.imageUrl || productData.images?.[0]
-    : productData.images?.[0];
+    ? productData.images?.find((img: any) => img.color?.toLowerCase().trim() === selectedColor.toLowerCase().trim())?.imageUrl || productData.images?.[0]?.imageUrl
+    : productData.images?.[0]?.imageUrl;
 
   const handleAddToWishlist = () => {
     const token = localStorage.getItem("token");

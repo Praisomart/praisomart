@@ -32,7 +32,7 @@ public class ProductAdminController {
 
     @PreAuthorize("hasAuthority('ADMIN')")
     @org.springframework.web.bind.annotation.GetMapping("/{id}")
-    public ResponseEntity<ProductRequestDTO> getProductById(@org.springframework.web.bind.annotation.PathVariable Long id) {
+    public ResponseEntity<com.praisomart.backend.adminPanel.dto.ProductAdminResponseDTO> getProductById(@org.springframework.web.bind.annotation.PathVariable Long id) {
         return ResponseEntity.ok(productServiceAdmin.getProductById(id));
     }
 

@@ -106,11 +106,11 @@ public class ProductService {
                 p.getDescription(),
                 p.getColor(),
                 getMinPrice(p),
-                p.getCategory() != null ? p.getCategory().getName() : null,
+                p.getCategory() == null ? "Uncategorized" : p.getCategory().getName(),
                 availableColors,
                 p.getImages() == null ? List.of() :
                         p.getImages().stream()
-                                .map(ProductImage::getImageUrl)
+                                .map(img -> new ImageResponse(img.getImageUrl(), img.getColor(), img.getPrimary()))
                                 .toList(),
                 p.getVariants() == null ? List.of() :
                         p.getVariants().stream()
