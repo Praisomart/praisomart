@@ -48,14 +48,16 @@ public class SecurityConfig {
     @Bean
     public org.springframework.web.cors.CorsConfigurationSource corsConfigurationSource() {
         org.springframework.web.cors.CorsConfiguration configuration = new org.springframework.web.cors.CorsConfiguration();
-        configuration.setAllowedOriginPatterns(java.util.List.of(
+        
+        // Explicitly allow localhost and production domains
+        configuration.setAllowedOrigins(java.util.List.of(
             "http://localhost:5173", 
             "http://localhost:3000",
-            "https://praisomart*.vercel.app", // Allows all Vercel previews
-            "https://praisomart.vercel.app"   // Your main production URL
+            "https://praisomart.vercel.app"
         ));
+        
         configuration.setAllowedMethods(java.util.List.of("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
-        configuration.setAllowedHeaders(java.util.List.of("Authorization", "Content-Type", "X-Requested-With", "Accept", "Origin"));
+        configuration.setAllowedHeaders(java.util.List.of("*")); // Allow all headers for now to avoid blocks
         configuration.setAllowCredentials(true);
         configuration.setMaxAge(3600L);
         
@@ -71,6 +73,7 @@ public class SecurityConfig {
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
+                        .requestMatchers(org.springframework.http.HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers("/api/auth/**", "/api/health", "/api/actuator/**").permitAll()
                         .requestMatchers("/api/categories/**").permitAll()
                         .requestMatchers("/api/products/**").permitAll()
