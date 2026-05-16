@@ -13,6 +13,8 @@ public class ProductImageDTO {
     @Min(value = 0, message = "Display order cannot be negative")
     private Integer displayOrder;
 
+    private String color;
+
     public Integer getDisplayOrder() {
         return displayOrder;
     }
@@ -20,6 +22,9 @@ public class ProductImageDTO {
     public void setDisplayOrder(Integer displayOrder) {
         this.displayOrder = displayOrder;
     }
+
+    public String getColor() { return color; }
+    public void setColor(String color) { this.color = color; }
 
     public String getImageUrl() {
         return imageUrl;

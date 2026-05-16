@@ -4,12 +4,16 @@ public class LoginResponseDTO {
 
     private String jwtToken;
     private String message;
+    private String name;
+    private String role;
 
     public LoginResponseDTO() {}
 
-    public LoginResponseDTO(String jwtToken, String message) {
+    public LoginResponseDTO(String jwtToken, String message, String name, String role) {
         this.jwtToken = jwtToken;
         this.message = message;
+        this.name = name;
+        this.role = role;
     }
 
     public String getJwtToken() {
@@ -26,5 +30,21 @@ public class LoginResponseDTO {
 
     public void setMessage(String message) {
         this.message = message;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public String getRole() {
+        return role;
+    }
+
+    public void setRole(String role) {
+        this.role = role;
     }
 }

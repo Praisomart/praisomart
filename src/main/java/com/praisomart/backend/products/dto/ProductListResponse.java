@@ -9,21 +9,27 @@ public class ProductListResponse {
     private String image;
     private Double price;
     private Boolean inStock;
+    private String categoryName;
 
 
     // ✅ Constructor (correct order)
     public ProductListResponse(Long id, String name, String color,
-                               String image, Double price, Boolean inStock) {
+                               String image, Double price, Boolean inStock, String categoryName) {
         this.id = id;
         this.name = name;
         this.color = color;
         this.image = image;
         this.price = price;
         this.inStock = inStock;
+        this.categoryName = categoryName;
     }
 
     public ProductListResponse() {
     }
+
+    // Getters & Setters
+    public String getCategoryName() { return categoryName; }
+    public void setCategoryName(String categoryName) { this.categoryName = categoryName; }
 
     // Getters & Setters
     public Long getId() { return id; }

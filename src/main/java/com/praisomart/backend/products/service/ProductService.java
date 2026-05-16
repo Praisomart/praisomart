@@ -5,6 +5,7 @@ import com.praisomart.backend.exception.ResourceNotFoundException;
 import com.praisomart.backend.products.dto.*;
 import com.praisomart.backend.products.entity.Product;
 import com.praisomart.backend.products.entity.ProductImage;
+import com.praisomart.backend.products.entity.ProductVariant;
 import com.praisomart.backend.products.repository.ProductRepository;
 import com.praisomart.backend.wishlist.repository.WishlistRepository;
 import com.praisomart.backend.auth.entity.User;
@@ -72,7 +73,8 @@ public class ProductService {
                     p.getColor(),
                     getPrimaryImage(p),
                     getMinPrice(p),
-                    isInStock(p)
+                    isInStock(p),
+                    p.getCategory() != null ? p.getCategory().getName() : null
             );
 
             responseList.add(dto);
@@ -91,11 +93,21 @@ public class ProductService {
         Product p = productRepository.findProductDetail(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Product not found"));
 
+        List<String> availableColors = p.getVariants() == null ? List.of() :
+                p.getVariants().stream()
+                        .map(ProductVariant::getColor)
+                        .filter(c -> c != null && !c.isBlank())
+                        .distinct()
+                        .toList();
+
         return new ProductDetailResponse(
                 p.getId(),
                 p.getName(),
                 p.getDescription(),
                 p.getColor(),
+                getMinPrice(p),
+                p.getCategory() != null ? p.getCategory().getName() : null,
+                availableColors,
                 p.getImages() == null ? List.of() :
                         p.getImages().stream()
                                 .map(ProductImage::getImageUrl)
@@ -103,9 +115,11 @@ public class ProductService {
                 p.getVariants() == null ? List.of() :
                         p.getVariants().stream()
                                 .map(v -> new VariantResponse(
+                                        v.getId(),
                                         v.getAttribute(),
                                         v.getPrice().doubleValue(),
-                                        v.getStock()
+                                        v.getStock(),
+                                        v.getColor()
                                 ))
                                 .toList()
         );
@@ -175,7 +189,8 @@ public class ProductService {
                             p.getColor(),
                             getPrimaryImage(p),
                             getMinPrice(p),
-                            isInStock(p)
+                            isInStock(p),
+                            p.getCategory() != null ? p.getCategory().getName() : null
                     );
 
             responseList.add(dto);

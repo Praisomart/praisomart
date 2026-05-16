@@ -12,6 +12,8 @@ public class ProductVariantDTO {
     @Size(max = 50, message = "Attribute can be max 50 characters")
     private String attribute; // optional (Default will be set in service)
 
+    private String color;
+
     @NotNull(message = "Price is required")
     @DecimalMin(value = "0.0", inclusive = false, message = "Price must be greater than 0")
     private BigDecimal price;
@@ -30,6 +32,9 @@ public class ProductVariantDTO {
     public void setAttribute(String attribute) {
         this.attribute = attribute;
     }
+
+    public String getColor() { return color; }
+    public void setColor(String color) { this.color = color; }
 
     public BigDecimal getPrice() {
         return price;

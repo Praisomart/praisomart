@@ -174,10 +174,11 @@ public class AuthService {
         String token = jwtUtil.generateToken(
                 savedUser.getId(),
                 savedUser.getEmail(),
+                savedUser.getName(),
                 List.of(savedUser.getRole())
         );
 
-        return new RegisterResponseDTO("Success", token);
+        return new RegisterResponseDTO(token, "Success", savedUser.getName(), savedUser.getRole());
     }
 
     // ---------------- LOGIN ----------------
@@ -201,9 +202,10 @@ public class AuthService {
         String token = jwtUtil.generateToken(
                 user.getId(),
                 user.getEmail(),
+                user.getName(),
                 List.of(user.getRole())
         );
 
-        return new LoginResponseDTO(token, "Login Success");
+        return new LoginResponseDTO(token, "Login Success", user.getName(), user.getRole());
     }
 }

@@ -29,4 +29,26 @@ public class ProductAdminController {
 
         return ResponseEntity.ok("Product created successfully with ID: " + productId);
     }
+
+    @PreAuthorize("hasAuthority('ADMIN')")
+    @org.springframework.web.bind.annotation.GetMapping("/{id}")
+    public ResponseEntity<ProductRequestDTO> getProductById(@org.springframework.web.bind.annotation.PathVariable Long id) {
+        return ResponseEntity.ok(productServiceAdmin.getProductById(id));
+    }
+
+    @PreAuthorize("hasAuthority('ADMIN')")
+    @org.springframework.web.bind.annotation.PutMapping("/{id}")
+    public ResponseEntity<?> updateProduct(
+            @org.springframework.web.bind.annotation.PathVariable Long id,
+            @Valid @RequestBody ProductRequestDTO request) {
+        productServiceAdmin.updateProduct(id, request);
+        return ResponseEntity.ok("Product updated successfully");
+    }
+
+    @PreAuthorize("hasAuthority('ADMIN')")
+    @org.springframework.web.bind.annotation.DeleteMapping("/{id}")
+    public ResponseEntity<?> deleteProduct(@org.springframework.web.bind.annotation.PathVariable Long id) {
+        productServiceAdmin.deleteProduct(id);
+        return ResponseEntity.ok("Product archived successfully");
+    }
 }

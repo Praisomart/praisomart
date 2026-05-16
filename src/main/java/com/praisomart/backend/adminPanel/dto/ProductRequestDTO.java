@@ -13,7 +13,7 @@ public class ProductRequestDTO {
     @NotBlank(message = "Product name is required")
     private String name;
 
-    @Size(max = 500, message = "Description can be max 500 characters")
+    @Size(max = 2000, message = "Description can be max 2000 characters")
     private String description;
 
     @NotBlank(message = "Color is required")

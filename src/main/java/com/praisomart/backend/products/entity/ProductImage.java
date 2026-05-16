@@ -15,6 +15,8 @@ public class ProductImage {
 
     private String imageUrl;
 
+    private String color;
+
     private Boolean isPrimary = false;
 
     private Integer displayOrder = 0;
@@ -44,6 +46,9 @@ public class ProductImage {
 
     public String getImageUrl() { return imageUrl; }
     public void setImageUrl(String imageUrl) { this.imageUrl = imageUrl; }
+
+    public String getColor() { return color; }
+    public void setColor(String color) { this.color = color; }
 
     public Boolean getPrimary() { return isPrimary; } // ✅ IMPORTANT FIX
     public void setPrimary(Boolean primary) { isPrimary = primary; }

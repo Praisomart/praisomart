@@ -76,13 +76,14 @@ public class ProductServiceAdmin {
 
             variant.setPrice(v.getPrice());
             variant.setStock(v.getStock() != null ? v.getStock() : 0);
+            variant.setColor(v.getColor() != null ? v.getColor().trim() : null);
             variant.setIsActive(true);
 
             // SKU GENERATION
             String baseName = request.getName().toUpperCase().replaceAll(" ", "-");
-            String color = request.getColor() != null ? request.getColor().toUpperCase() : "NA";
+            String colorCode = v.getColor() != null ? v.getColor().toUpperCase() : "NA";
 
-            String generatedSku = baseName + "-" + color + "-" + attribute.toUpperCase()
+            String generatedSku = baseName + "-" + colorCode + "-" + attribute.toUpperCase()
                     + "-" + System.currentTimeMillis();
 
             variant.setSku(generatedSku);
@@ -107,6 +108,7 @@ public class ProductServiceAdmin {
 
                 ProductImage image = new ProductImage();
                 image.setImageUrl(i.getImageUrl().trim());
+                image.setColor(i.getColor() != null ? i.getColor().trim() : null);
                 image.setPrimary(i.getIsPrimary() != null && i.getIsPrimary());
                 image.setDisplayOrder(i.getDisplayOrder() != null ? i.getDisplayOrder() : 0);
 
@@ -161,6 +163,7 @@ public class ProductServiceAdmin {
             dto.setAttribute(v.getAttribute());
             dto.setPrice(v.getPrice());
             dto.setStock(v.getStock());
+            dto.setColor(v.getColor());
             return dto;
         }).toList());
 
@@ -169,6 +172,7 @@ public class ProductServiceAdmin {
             dto.setImageUrl(i.getImageUrl());
             dto.setIsPrimary(i.getPrimary());
             dto.setDisplayOrder(i.getDisplayOrder());
+            dto.setColor(i.getColor());
             return dto;
         }).toList());
 
@@ -196,6 +200,7 @@ public class ProductServiceAdmin {
                 variant.setAttribute(v.getAttribute() != null ? v.getAttribute().trim() : "DEFAULT");
                 variant.setPrice(v.getPrice());
                 variant.setStock(v.getStock() != null ? v.getStock() : 0);
+                variant.setColor(v.getColor() != null ? v.getColor().trim() : null);
                 variant.setProduct(product);
                 variant.setIsActive(true);
                 // SKU update logic could go here
@@ -211,6 +216,7 @@ public class ProductServiceAdmin {
                 if (i.getImageUrl() == null || i.getImageUrl().isBlank()) continue;
                 ProductImage image = new ProductImage();
                 image.setImageUrl(i.getImageUrl().trim());
+                image.setColor(i.getColor() != null ? i.getColor().trim() : null);
                 image.setPrimary(i.getIsPrimary() != null && i.getIsPrimary());
                 image.setProduct(product);
                 if (Boolean.TRUE.equals(i.getIsPrimary())) hasPrimary = true;

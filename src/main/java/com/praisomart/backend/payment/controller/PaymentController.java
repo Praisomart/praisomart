@@ -22,7 +22,9 @@ public class PaymentController {
                     request.getCurrency(),
                     request.getReceipt()
             );
-            return ResponseEntity.ok(order);
+            return ResponseEntity.ok()
+                    .header("Content-Type", "application/json")
+                    .body(order);
         } catch (RazorpayException e) {
             return ResponseEntity.status(500).body("{\"error\": \"" + e.getMessage() + "\"}");
         }

@@ -26,10 +26,11 @@ public class JwtUtil {
     }
 
     // ✅ Token Generation
-    public String generateToken(Long userId, String username, List<String> roles) {
+    public String generateToken(Long userId, String username, String name, List<String> roles) {
         return Jwts.builder()
                 .setSubject(username)
                 .claim("userId", userId)
+                .claim("name", name)
                 .claim("roles", roles)
                 .setIssuedAt(new Date())
                 .setExpiration(new Date(System.currentTimeMillis() + expiration))

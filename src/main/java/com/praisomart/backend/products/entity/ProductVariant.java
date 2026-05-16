@@ -6,7 +6,7 @@ import java.math.BigDecimal;
 
 @Entity
 @Table(name = "product_variants",
-        uniqueConstraints = @UniqueConstraint(columnNames = {"product_id", "attribute"}))
+        uniqueConstraints = @UniqueConstraint(columnNames = {"product_id", "attribute", "color"}))
 public class ProductVariant {
 
     @Id
@@ -21,6 +21,8 @@ public class ProductVariant {
 
     @Column(nullable = false)
     private Integer stock = 0;
+
+    private String color;
 
     private String sku;
 
@@ -62,6 +64,9 @@ public class ProductVariant {
 
     public Integer getStock() { return stock; }
     public void setStock(Integer stock) { this.stock = stock; }
+
+    public String getColor() { return color; }
+    public void setColor(String color) { this.color = color; }
 
     public String getSku() { return sku; }
     public void setSku(String sku) { this.sku = sku; }

@@ -9,19 +9,37 @@ public class ProductDetailResponse {
     private String description;
     private String color;
     private List<String> images;
+    private Double price;
+    private String categoryName;
+    private List<String> availableColors;
     private List<VariantResponse> variants;
 
     // ✅ Constructor (correct order)
     public ProductDetailResponse(Long id, String name, String description,
-                                     String color, List<String> images,
+                                     String color, Double price, String categoryName, 
+                                     List<String> availableColors, List<String> images,
                                  List<VariantResponse> variants) {
         this.id = id;
         this.name = name;
         this.description = description;
         this.color = color;
+        this.price = price;
+        this.categoryName = categoryName;
+        this.availableColors = availableColors;
         this.images = images;
         this.variants = variants;
     }
+
+    // Getters & Setters
+    public String getCategoryName() { return categoryName; }
+    public void setCategoryName(String categoryName) { this.categoryName = categoryName; }
+
+    public List<String> getAvailableColors() { return availableColors; }
+    public void setAvailableColors(List<String> availableColors) { this.availableColors = availableColors; }
+
+    // Getters & Setters
+    public Double getPrice() { return price; }
+    public void setPrice(Double price) { this.price = price; }
 
     // Getters & Setters
     public Long getId() { return id; }
