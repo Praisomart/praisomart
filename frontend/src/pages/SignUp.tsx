@@ -49,8 +49,11 @@ const SignUp = () => {
         body: JSON.stringify(values),
       });
 
-      // Auto-login: the backend returns a jwtToken on successful registration
-      if (data.jwtToken) {
+      // Check if OTP verification is required (default behavior for new OTP flow)
+      if (data.requiresOtp) {
+        toast.info("A verification code has been sent to your email.");
+        navigate("/verify-otp", { state: { target: values.email } });
+      } else if (data.jwtToken) {
         login(data.jwtToken, { 
           identifier: values.email, 
           name: data.name || values.name, 
@@ -60,8 +63,8 @@ const SignUp = () => {
         toast.success("Welcome to Praisomart! Your account has been created.");
         navigate("/");
       } else {
-        toast.success("Account created! Please sign in.");
-        navigate("/signin");
+        toast.success("Account created! Please verify your email with the OTP sent.");
+        navigate("/verify-otp", { state: { target: values.email } });
       }
     } catch (error: any) {
       toast.error(error.message || "Registration failed");

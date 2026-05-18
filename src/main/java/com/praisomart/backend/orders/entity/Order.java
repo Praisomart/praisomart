@@ -31,6 +31,16 @@ public class Order {
 
     private String razorpayPaymentId;
 
+    private String trackingNumber;
+
+    private String courierService;
+
+    private String paymentMode; // "COD" or "ONLINE"
+
+    private String couponCode;
+
+    private BigDecimal discountAmount;
+
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<OrderItem> items = new ArrayList<>();
 
@@ -79,6 +89,30 @@ public class Order {
         this.razorpayPaymentId = razorpayPaymentId;
     }
 
+    public String getTrackingNumber() {
+        return trackingNumber;
+    }
+
+    public void setTrackingNumber(String trackingNumber) {
+        this.trackingNumber = trackingNumber;
+    }
+
+    public String getCourierService() {
+        return courierService;
+    }
+
+    public void setCourierService(String courierService) {
+        this.courierService = courierService;
+    }
+
+    public String getPaymentMode() {
+        return paymentMode;
+    }
+
+    public void setPaymentMode(String paymentMode) {
+        this.paymentMode = paymentMode;
+    }
+
     public String getStatus() {
         return status;
     }
@@ -109,5 +143,21 @@ public class Order {
 
     public void setUser(User user) {
         this.user = user;
+    }
+
+    public String getCouponCode() {
+        return couponCode;
+    }
+
+    public void setCouponCode(String couponCode) {
+        this.couponCode = couponCode;
+    }
+
+    public BigDecimal getDiscountAmount() {
+        return discountAmount;
+    }
+
+    public void setDiscountAmount(BigDecimal discountAmount) {
+        this.discountAmount = discountAmount;
     }
 }

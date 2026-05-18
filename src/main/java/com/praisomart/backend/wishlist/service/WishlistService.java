@@ -135,7 +135,7 @@ public class WishlistService {
                     .orElse(0.0);
         }
 
-        return new WishlistResponseDTO(
+        WishlistResponseDTO dto = new WishlistResponseDTO(
                 item.getId(),
                 product.getId(),
                 product.getName(),
@@ -144,6 +144,12 @@ public class WishlistService {
                 item.getAddedAt(),
                 item.getIsActive()
         );
+
+        if (product.getVariants() != null && !product.getVariants().isEmpty()) {
+            dto.setDefaultVariantId(product.getVariants().iterator().next().getId());
+        }
+
+        return dto;
     }
 }
 

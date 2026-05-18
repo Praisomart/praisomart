@@ -8,6 +8,8 @@ import com.praisomart.backend.auth.security.JwtUtil;
 import com.praisomart.backend.exception.*;
 
 import jakarta.transaction.Transactional;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.authentication.*;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -19,6 +21,8 @@ import java.util.List;
 
 @Service
 public class AuthService {
+
+    private static final Logger logger = LoggerFactory.getLogger(AuthService.class);
 
     private final UserRepository userRepository;
     private final OtpVerificationRepository otpRepository;
@@ -186,7 +190,10 @@ public class AuthService {
 
         User user = userRepository.findByEmail(request.getIdentifier())
                 .or(() -> userRepository.findByPhoneNumber(request.getIdentifier()))
-                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+                .orElseThrow(() -> {
+                    logger.warn("Login failed: User with identifier {} not found", request.getIdentifier());
+                    return new ResourceNotFoundException("User not found");
+                });
 
         try {
             authenticationManager.authenticate(
@@ -196,6 +203,7 @@ public class AuthService {
                     )
             );
         } catch (BadCredentialsException e) {
+            logger.warn("Login failed: Invalid password for user {}", user.getEmail());
             throw new UnauthorizedException("Invalid credentials");
         }
 

@@ -71,15 +71,19 @@ public class SecurityConfig {
         http
                 .csrf(csrf -> csrf.disable())
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+                .headers(headers -> headers.frameOptions(frameOptions -> frameOptions.disable())) // Permit H2 Console frames
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(org.springframework.http.HttpMethod.OPTIONS, "/**").permitAll()
+                        .requestMatchers("/h2-console/**").permitAll() // Permit H2 console publicly
                         .requestMatchers("/api/auth/**", "/api/health", "/api/actuator/**").permitAll()
+                        .requestMatchers("/uploads/**").permitAll()
                         .requestMatchers("/api/categories/**").permitAll()
                         .requestMatchers("/api/products/**").permitAll()
+                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/reviews/product/**").permitAll()
 
-                        //  ADMIN ONLY
-                        .requestMatchers("/api/admin/**").hasAuthority("ADMIN")
+                        //  ADMIN & MINOR_ADMIN
+                        .requestMatchers("/api/admin/**").hasAnyAuthority("ADMIN", "MINOR_ADMIN")
 
                         .anyRequest().authenticated()
                 )

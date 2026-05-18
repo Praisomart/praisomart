@@ -16,13 +16,13 @@ public class CategoryAdminController {
         this.categoryServiceAdmin = categoryServiceAdmin;
     }
 
-    @PreAuthorize("hasAuthority('ADMIN')")
+    @PreAuthorize("hasAnyAuthority('ADMIN', 'MINOR_ADMIN')")
     @GetMapping
     public ResponseEntity<?> getAllCategories() {
         return ResponseEntity.ok(categoryServiceAdmin.getAllCategories());
     }
 
-    @PreAuthorize("hasAuthority('ADMIN')")
+    @PreAuthorize("hasAnyAuthority('ADMIN', 'MINOR_ADMIN')")
     @PostMapping
     public ResponseEntity<?> createCategory(@RequestBody CategoryRequestDTO request) {
         return ResponseEntity.ok(categoryServiceAdmin.createCategory(request));

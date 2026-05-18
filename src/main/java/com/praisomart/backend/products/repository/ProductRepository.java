@@ -119,6 +119,18 @@ ORDER BY p.id DESC
             Pageable pageable
     );
 
+    @Query("""
+        SELECT p FROM Product p
+        WHERE p.isActive = true
+        AND p.category.id = :categoryId
+        AND p.id != :productId
+    """)
+    List<Product> findRelatedProducts(
+            @Param("categoryId") Long categoryId,
+            @Param("productId") Long productId,
+            Pageable pageable
+    );
+
 //    @Query("""
 //SELECT p
 //FROM Product p

@@ -1,9 +1,12 @@
 import { useState, useMemo } from "react";
-import { Link, useSearchParams } from "react-router-dom";
+import { Link, useSearchParams, useNavigate } from "react-router-dom";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { useProducts } from "@/hooks/use-products";
 import { useCategories } from "@/hooks/use-categories";
+import { useCart } from "@/hooks/use-cart";
+import { useWishlist } from "@/hooks/use-wishlist";
+import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
 import { Heart, ShoppingBag, Star, Eye, SlidersHorizontal, X, ChevronDown, Grid3X3, LayoutList, Search, ArrowUpDown } from "lucide-react";
 import categorySarees from "@/assets/category-sarees.jpg";
@@ -26,11 +29,14 @@ const PRICE_RANGES = [
 ];
 
 const AllProducts = () => {
+  const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const initialCategory = searchParams.get("category") || "";
 
   const { data: apiProducts, isLoading } = useProducts();
   const { data: categories } = useCategories();
+  const { addToCart } = useCart();
+  const { addToWishlist } = useWishlist();
 
   const [selectedCategory, setSelectedCategory] = useState(initialCategory);
   const [selectedSort, setSelectedSort] = useState("newest");
@@ -52,6 +58,7 @@ const AllProducts = () => {
       categoryName: p.categoryName || "",
       inStock: p.inStock !== false,
       tag: p.tag || (p.id % 2 === 0 ? "New" : "Bestseller"),
+      defaultVariantId: p.defaultVariantId,
     })) || [];
   }, [apiProducts]);
 
@@ -452,7 +459,19 @@ const AllProducts = () => {
                       
                       {/* Quick actions */}
                       <div className="absolute bottom-3 right-3 flex gap-2">
-                        <button className="w-9 h-9 rounded-full bg-card/90 backdrop-blur-sm flex items-center justify-center shadow-md text-foreground hover:text-accent hover:bg-accent/10 transition-all duration-300 opacity-0 group-hover:opacity-100 translate-y-2 group-hover:translate-y-0">
+                        <button
+                          className="w-9 h-9 rounded-full bg-card/90 backdrop-blur-sm flex items-center justify-center shadow-md text-foreground hover:text-accent hover:bg-accent/10 transition-all duration-300 opacity-0 group-hover:opacity-100 translate-y-2 group-hover:translate-y-0"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            const tok = localStorage.getItem("token");
+                            if (!tok) {
+                              toast.error("Please sign in to add items to your wishlist");
+                              navigate("/signin");
+                              return;
+                            }
+                            addToWishlist.mutate(product.id);
+                          }}
+                        >
                           <Heart size={15} />
                         </button>
                         <Link to={`/product/${product.id}`}>
@@ -460,7 +479,21 @@ const AllProducts = () => {
                             <Eye size={15} />
                           </button>
                         </Link>
-                        <button className="w-9 h-9 rounded-full bg-card/90 backdrop-blur-sm flex items-center justify-center shadow-md text-foreground hover:text-primary-foreground hover:bg-primary transition-all duration-300 opacity-0 group-hover:opacity-100 translate-y-2 group-hover:translate-y-0" style={{ transitionDelay: '100ms' }}>
+                        <button
+                          className="w-9 h-9 rounded-full bg-card/90 backdrop-blur-sm flex items-center justify-center shadow-md text-foreground hover:text-primary-foreground hover:bg-primary transition-all duration-300 opacity-0 group-hover:opacity-100 translate-y-2 group-hover:translate-y-0"
+                          style={{ transitionDelay: '100ms' }}
+                          onClick={(e) => {
+                            e.preventDefault();
+                            const tok = localStorage.getItem("token");
+                            if (!tok) {
+                              toast.error("Please sign in to add items to your cart");
+                              navigate("/signin");
+                              return;
+                            }
+                            const variantId = product.defaultVariantId || product.id;
+                            addToCart.mutate({ productVariantId: variantId, quantity: 1 });
+                          }}
+                        >
                           <ShoppingBag size={15} />
                         </button>
                       </div>

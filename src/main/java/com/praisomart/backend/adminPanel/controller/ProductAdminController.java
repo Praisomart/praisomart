@@ -20,7 +20,7 @@ public class ProductAdminController {
         this.productServiceAdmin = productServiceAdmin;
     }
 
-    @PreAuthorize("hasAuthority('ADMIN')")
+    @PreAuthorize("hasAnyAuthority('ADMIN', 'MINOR_ADMIN')")
     @PostMapping
     public ResponseEntity<?> createProduct(
             @Valid @RequestBody ProductRequestDTO request) {
@@ -30,13 +30,13 @@ public class ProductAdminController {
         return ResponseEntity.ok("Product created successfully with ID: " + productId);
     }
 
-    @PreAuthorize("hasAuthority('ADMIN')")
+    @PreAuthorize("hasAnyAuthority('ADMIN', 'MINOR_ADMIN')")
     @org.springframework.web.bind.annotation.GetMapping("/{id}")
     public ResponseEntity<com.praisomart.backend.adminPanel.dto.ProductAdminResponseDTO> getProductById(@org.springframework.web.bind.annotation.PathVariable Long id) {
         return ResponseEntity.ok(productServiceAdmin.getProductById(id));
     }
 
-    @PreAuthorize("hasAuthority('ADMIN')")
+    @PreAuthorize("hasAnyAuthority('ADMIN', 'MINOR_ADMIN')")
     @org.springframework.web.bind.annotation.PutMapping("/{id}")
     public ResponseEntity<?> updateProduct(
             @org.springframework.web.bind.annotation.PathVariable Long id,

@@ -15,7 +15,9 @@ import SignIn from "./pages/SignIn.tsx";
 import SignUp from "./pages/SignUp.tsx";
 import Admin from "./pages/Admin.tsx";
 import AllProducts from "./pages/AllProducts.tsx";
+import VerifyOtp from "./pages/VerifyOtp.tsx";
 import Profile from "./pages/Profile.tsx";
+import ReturnPolicy from "./pages/ReturnPolicy.tsx";
 import ProtectedRoute from "./components/ProtectedRoute.tsx";
 
 const queryClient = new QueryClient();
@@ -37,6 +39,8 @@ const App = () => (
             <Route path="/contact" element={<Contact />} />
             <Route path="/signin" element={<SignIn />} />
             <Route path="/signup" element={<SignUp />} />
+            <Route path="/verify-otp" element={<VerifyOtp />} />
+            <Route path="/return-policy" element={<ReturnPolicy />} />
             <Route 
               path="/profile" 
               element={

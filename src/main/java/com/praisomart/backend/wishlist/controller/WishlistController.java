@@ -24,6 +24,10 @@ public class WishlistController {
             @AuthenticationPrincipal CustomerUserDetails user,
             @RequestParam Long productId) {
 
+        if (user.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ADMIN"))) {
+            throw new com.praisomart.backend.exception.BadRequestException("Admins cannot use the wishlist feature");
+        }
+
         return ResponseEntity.ok(
                 wishlistService.addToWishlist(user.getUserId(), productId)
         );

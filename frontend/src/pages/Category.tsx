@@ -1,14 +1,20 @@
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useNavigate } from "react-router-dom";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { useProducts } from "@/hooks/use-products";
+import { useCart } from "@/hooks/use-cart";
+import { useWishlist } from "@/hooks/use-wishlist";
+import { toast } from "sonner";
 import { motion } from "framer-motion";
 import { Heart, ShoppingBag, Star, Eye } from "lucide-react";
 import categorySarees from "@/assets/category-sarees.jpg";
 
 const Category = () => {
   const { id } = useParams();
+  const navigate = useNavigate();
   const { data: apiProducts, isLoading } = useProducts(id);
+  const { addToCart } = useCart();
+  const { addToWishlist } = useWishlist();
 
   const products = apiProducts?.content?.map((p: any) => ({
     id: p.id,
@@ -18,6 +24,7 @@ const Category = () => {
     image: p.mainImage || categorySarees,
     rating: p.rating || 4.5,
     tag: p.tag || (p.id % 2 === 0 ? "New" : "Bestseller"),
+    defaultVariantId: p.defaultVariantId,
   })) || [];
 
   return (
@@ -46,14 +53,13 @@ const Category = () => {
                       style={{ transitionDelay: '0ms' }}
                       onClick={(e) => {
                         e.preventDefault();
-                        const wishlist = JSON.parse(localStorage.getItem("wishlist") || "[]");
-                        if (!wishlist.some((w: any) => w.id === product.id)) {
-                          wishlist.push(product);
-                          localStorage.setItem("wishlist", JSON.stringify(wishlist));
-                          import("sonner").then(m => m.toast.success(`${product.name} added to wishlist!`));
-                        } else {
-                          import("sonner").then(m => m.toast.info(`${product.name} is already in wishlist.`));
+                        const tok = localStorage.getItem("token");
+                        if (!tok) {
+                          toast.error("Please sign in to add items to your wishlist");
+                          navigate("/signin");
+                          return;
                         }
+                        addToWishlist.mutate(product.id);
                       }}
                     >
                       <Heart size={15} />
@@ -73,10 +79,14 @@ const Category = () => {
                       style={{ transitionDelay: '120ms' }}
                       onClick={(e) => {
                         e.preventDefault();
-                        const cart = JSON.parse(localStorage.getItem("cart") || "[]");
-                        cart.push({ ...product, quantity: 1 });
-                        localStorage.setItem("cart", JSON.stringify(cart));
-                        import("sonner").then(m => m.toast.success(`${product.name} added to cart!`));
+                        const tok = localStorage.getItem("token");
+                        if (!tok) {
+                          toast.error("Please sign in to add items to your cart");
+                          navigate("/signin");
+                          return;
+                        }
+                        const variantId = product.defaultVariantId || product.id;
+                        addToCart.mutate({ productVariantId: variantId, quantity: 1 });
                       }}
                     >
                       <ShoppingBag size={15} />

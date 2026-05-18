@@ -5,6 +5,7 @@ import FeaturedProducts from "@/components/FeaturedProducts";
 import PromoBanner from "@/components/PromoBanner";
 import TestimonialSection from "@/components/TestimonialSection";
 import Footer from "@/components/Footer";
+import PromoOfferPopup from "@/components/PromoOfferPopup";
 
 const Index = () => {
   return (
@@ -16,6 +17,7 @@ const Index = () => {
       <PromoBanner />
       <TestimonialSection />
       <Footer />
+      <PromoOfferPopup />
     </div>
   );
 };

@@ -69,10 +69,14 @@ const Footer = () => {
           >
             <h4 className="font-display text-lg font-semibold mb-5">Customer Service</h4>
             <ul className="space-y-3">
-              {["FAQ", "Privacy Policy"].map((link) => (
-                <li key={link}>
-                  <Link to="/" className="group flex items-center gap-1 text-sm text-primary-foreground/60 hover:text-gold transition-colors">
-                    {link}
+              {[
+                { name: "FAQ", href: "/" },
+                { name: "Privacy Policy", href: "/" },
+                { name: "Return Policy", href: "/return-policy" },
+              ].map((link) => (
+                <li key={link.name}>
+                  <Link to={link.href} className="group flex items-center gap-1 text-sm text-primary-foreground/60 hover:text-gold transition-colors">
+                    {link.name}
                     <ArrowUpRight size={12} className="opacity-0 group-hover:opacity-100 transition-opacity" />
                   </Link>
                 </li>

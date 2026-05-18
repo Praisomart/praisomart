@@ -10,6 +10,7 @@ public class ProductListResponse {
     private Double price;
     private Boolean inStock;
     private String categoryName;
+    private Long defaultVariantId;
 
 
     // ✅ Constructor (correct order)
@@ -50,5 +51,6 @@ public class ProductListResponse {
     public Boolean getInStock() { return inStock; }
     public void setInStock(Boolean inStock) { this.inStock = inStock; }
 
-
+    public Long getDefaultVariantId() { return defaultVariantId; }
+    public void setDefaultVariantId(Long defaultVariantId) { this.defaultVariantId = defaultVariantId; }
 }

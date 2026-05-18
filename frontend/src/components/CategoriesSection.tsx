@@ -22,16 +22,26 @@ const CategoriesSection = () => {
   
   const categories = dbCategories?.map((c: any) => {
     let image = categorySarees;
-    if (c.name.toLowerCase().includes("legging")) image = categoryLeggings;
-    else if (c.name.toLowerCase().includes("top")) image = categoryTops;
-    else if (c.imageUrl) image = c.imageUrl;
+    if (c.name.toLowerCase().includes("legging")) {
+      image = categoryLeggings;
+    } else if (c.name.toLowerCase().includes("top")) {
+      image = categoryTops;
+    } else if (c.name.toLowerCase().includes("saree")) {
+      image = categorySarees;
+    } else if (c.name.toLowerCase().includes("fabric")) {
+      image = "https://images.unsplash.com/photo-1544816155-12df9643f363?auto=format&fit=crop&q=80";
+    } else if (c.name.toLowerCase().includes("blouse")) {
+      image = "https://images.unsplash.com/photo-1617627143750-d86bc21e42bb?auto=format&fit=crop&q=80";
+    } else if (c.imageUrl) {
+      image = c.imageUrl;
+    }
 
     return {
       name: c.name,
       image,
       href: `/category/${c.id}`,
       count: "Explore",
-      desc: "Find your style",
+      desc: c.description || "Find your style",
     };
   }) || [
     { name: "Sarees", image: categorySarees, href: "/category/1", count: "200+ Designs", desc: "Handcrafted silk & cotton" },

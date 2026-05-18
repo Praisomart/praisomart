@@ -1,6 +1,7 @@
 import { motion } from "framer-motion";
 import { Heart, ShoppingBag, Star, Eye } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 import categorySarees from "@/assets/category-sarees.jpg";
 import categoryTops from "@/assets/category-tops.jpg";
 
@@ -16,6 +17,7 @@ const mockProducts = [
 ];
 
 const FeaturedProducts = () => {
+  const navigate = useNavigate();
   const { data: apiProducts, isLoading } = useProducts();
   const { addToCart } = useCart();
   const { addToWishlist } = useWishlist();
@@ -28,6 +30,7 @@ const FeaturedProducts = () => {
     image: p.image || categorySarees,
     rating: p.rating || 4.5,
     tag: p.tag || (p.id % 2 === 0 ? "New" : "Bestseller"),
+    defaultVariantId: p.defaultVariantId, // Set in the DTO
   })) || mockProducts;
 
   const tagColors: Record<string, string> = {
@@ -118,6 +121,12 @@ const FeaturedProducts = () => {
                     style={{ transitionDelay: '0ms' }}
                     onClick={(e) => {
                       e.preventDefault();
+                      const tok = localStorage.getItem("token");
+                      if (!tok) {
+                        toast.error("Please sign in to add items to your wishlist");
+                        navigate("/signin");
+                        return;
+                      }
                       addToWishlist.mutate(product.id);
                     }}
                   >
@@ -144,7 +153,14 @@ const FeaturedProducts = () => {
                     style={{ transitionDelay: '120ms' }}
                     onClick={(e) => {
                       e.preventDefault();
-                      addToCart.mutate({ productId: product.id, quantity: 1 });
+                      const tok = localStorage.getItem("token");
+                      if (!tok) {
+                        toast.error("Please sign in to add items to your cart");
+                        navigate("/signin");
+                        return;
+                      }
+                      const variantId = product.defaultVariantId || product.id;
+                      addToCart.mutate({ productVariantId: variantId, quantity: 1 });
                     }}
                   >
                     <ShoppingBag size={15} />

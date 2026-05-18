@@ -77,6 +77,10 @@ public class ProductService {
                     p.getCategory() != null ? p.getCategory().getName() : null
             );
 
+            if (p.getVariants() != null && !p.getVariants().isEmpty()) {
+                dto.setDefaultVariantId(p.getVariants().iterator().next().getId());
+            }
+
             responseList.add(dto);
         }
 
@@ -193,6 +197,10 @@ public class ProductService {
                             p.getCategory() != null ? p.getCategory().getName() : null
                     );
 
+            if (p.getVariants() != null && !p.getVariants().isEmpty()) {
+                dto.setDefaultVariantId(p.getVariants().iterator().next().getId());
+            }
+
             responseList.add(dto);
         }
 
@@ -201,6 +209,41 @@ public class ProductService {
                 pageable,
                 pageResult.getTotalElements()
         );
+    }
+
+    public PageImpl<ProductListResponse> getSuggestedProducts(Long productId) {
+        Product p = productRepository.findById(productId)
+                .orElseThrow(() -> new ResourceNotFoundException("Product not found"));
+
+        if (p.getCategory() == null) {
+            return new PageImpl<>(List.of());
+        }
+
+        List<Product> related = productRepository.findRelatedProducts(
+                p.getCategory().getId(),
+                productId,
+                PageRequest.of(0, 4) // Suggest top 4
+        );
+
+        List<ProductListResponse> mapped = related.stream()
+                .map(rp -> {
+                    ProductListResponse dto = new ProductListResponse(
+                            rp.getId(),
+                            rp.getName(),
+                            rp.getColor(),
+                            getPrimaryImage(rp),
+                            getMinPrice(rp),
+                            isInStock(rp),
+                            rp.getCategory().getName()
+                    );
+                    if (rp.getVariants() != null && !rp.getVariants().isEmpty()) {
+                        dto.setDefaultVariantId(rp.getVariants().iterator().next().getId());
+                    }
+                    return dto;
+                })
+                .toList();
+
+        return new PageImpl<>(mapped);
     }
 }
 

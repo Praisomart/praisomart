@@ -69,4 +69,8 @@ public class ProductController {
         );
     }
 
+    @GetMapping("/{id}/suggested")
+    public ResponseEntity<Page<ProductListResponse>> getSuggestedProducts(@PathVariable Long id) {
+        return ResponseEntity.ok(productService.getSuggestedProducts(id));
+    }
 }

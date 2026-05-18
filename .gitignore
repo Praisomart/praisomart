@@ -31,3 +31,12 @@ build/
 
 ### VS Code ###
 .vscode/
+
+### Local Environment ###
+.env
+.env.local
+
+data/
+uploads/
+
+backend_log.txt

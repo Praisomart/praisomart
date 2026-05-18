@@ -191,37 +191,84 @@ public class ProductServiceAdmin {
         product.setColor(request.getColor());
         product.setCategory(category);
 
-        // Update Variants (for simplicity, we replace them or update existing ones)
-        // In a real app, you'd match by ID, but here we'll clear and add new ones if provided
+        // Match and update existing variants in-place to avoid unique constraint violations
         if (request.getVariants() != null && !request.getVariants().isEmpty()) {
-            product.getVariants().clear();
-            for (ProductVariantDTO v : request.getVariants()) {
-                ProductVariant variant = new ProductVariant();
-                variant.setAttribute(v.getAttribute() != null ? v.getAttribute().trim() : "DEFAULT");
-                variant.setPrice(v.getPrice());
-                variant.setStock(v.getStock() != null ? v.getStock() : 0);
-                variant.setColor(v.getColor() != null ? v.getColor().trim() : null);
-                variant.setProduct(product);
-                variant.setIsActive(true);
-                // SKU update logic could go here
-                product.getVariants().add(variant);
+            java.util.Map<String, ProductVariant> existingMap = new java.util.HashMap<>();
+            for (ProductVariant existing : product.getVariants()) {
+                String attr = existing.getAttribute() != null ? existing.getAttribute().trim() : "DEFAULT";
+                String col = existing.getColor() != null ? existing.getColor().trim() : "none";
+                String key = attr.toLowerCase() + "_" + col.toLowerCase();
+                existingMap.put(key, existing);
             }
+
+            Set<ProductVariant> newVariants = new HashSet<>();
+            for (ProductVariantDTO v : request.getVariants()) {
+                String attr = v.getAttribute() != null ? v.getAttribute().trim() : "DEFAULT";
+                String col = v.getColor() != null ? v.getColor().trim() : null;
+                String key = attr.toLowerCase() + "_" + (col != null ? col.toLowerCase() : "none");
+
+                if (existingMap.containsKey(key)) {
+                    ProductVariant existing = existingMap.get(key);
+                    existing.setPrice(v.getPrice());
+                    existing.setStock(v.getStock() != null ? v.getStock() : 0);
+                    existing.setIsActive(true);
+                    newVariants.add(existing);
+                } else {
+                    ProductVariant variant = new ProductVariant();
+                    variant.setAttribute(attr);
+                    variant.setPrice(v.getPrice());
+                    variant.setStock(v.getStock() != null ? v.getStock() : 0);
+                    variant.setColor(col);
+                    variant.setProduct(product);
+                    variant.setIsActive(true);
+
+                    // SKU GENERATION
+                    String baseName = request.getName().toUpperCase().replaceAll(" ", "-");
+                    String colorCode = col != null ? col.toUpperCase() : "NA";
+                    String generatedSku = baseName + "-" + colorCode + "-" + attr.toUpperCase() + "-" + System.currentTimeMillis();
+                    variant.setSku(generatedSku);
+
+                    newVariants.add(variant);
+                }
+            }
+
+            product.getVariants().retainAll(newVariants);
+            product.getVariants().addAll(newVariants);
         }
 
-        // Update Images (specifically for Cover Image)
+        // Match and update images in-place
         if (request.getImages() != null) {
-            product.getImages().clear();
+            java.util.Map<String, ProductImage> existingImagesMap = new java.util.HashMap<>();
+            for (ProductImage img : product.getImages()) {
+                existingImagesMap.put(img.getImageUrl().trim(), img);
+            }
+
+            Set<ProductImage> newImages = new HashSet<>();
             boolean hasPrimary = false;
             for (ProductImageDTO i : request.getImages()) {
                 if (i.getImageUrl() == null || i.getImageUrl().isBlank()) continue;
-                ProductImage image = new ProductImage();
-                image.setImageUrl(i.getImageUrl().trim());
-                image.setColor(i.getColor() != null ? i.getColor().trim() : null);
-                image.setPrimary(i.getIsPrimary() != null && i.getIsPrimary());
-                image.setProduct(product);
-                if (Boolean.TRUE.equals(i.getIsPrimary())) hasPrimary = true;
-                product.getImages().add(image);
+                String url = i.getImageUrl().trim();
+
+                if (existingImagesMap.containsKey(url)) {
+                    ProductImage img = existingImagesMap.get(url);
+                    img.setColor(i.getColor() != null ? i.getColor().trim() : null);
+                    img.setPrimary(i.getIsPrimary() != null && i.getIsPrimary());
+                    if (Boolean.TRUE.equals(i.getIsPrimary())) hasPrimary = true;
+                    newImages.add(img);
+                } else {
+                    ProductImage image = new ProductImage();
+                    image.setImageUrl(url);
+                    image.setColor(i.getColor() != null ? i.getColor().trim() : null);
+                    image.setPrimary(i.getIsPrimary() != null && i.getIsPrimary());
+                    image.setProduct(product);
+                    if (Boolean.TRUE.equals(i.getIsPrimary())) hasPrimary = true;
+                    newImages.add(image);
+                }
             }
+
+            product.getImages().retainAll(newImages);
+            product.getImages().addAll(newImages);
+
             if (!product.getImages().isEmpty() && !hasPrimary) {
                 product.getImages().iterator().next().setPrimary(true);
             }

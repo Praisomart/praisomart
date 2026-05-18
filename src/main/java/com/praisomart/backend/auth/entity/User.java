@@ -36,10 +36,14 @@ public class User {
     @Column(name="role", nullable = false)
     private String role;
 
+    @Column(name="is_verified", nullable = false)
+    private Boolean isVerified = true;
+
     @PrePersist
     protected void onCreate() {
         this.createdAt = LocalDateTime.now();
         this.role="USER";
+        this.isVerified = true;
     }
 
     public User(LocalDateTime createdAt, String email, Long id, String name, String password, String phoneNumber, String role) {
@@ -109,5 +113,13 @@ public class User {
 
     public void setRole(String role) {
         this.role = role;
+    }
+
+    public Boolean getVerified() {
+        return isVerified;
+    }
+
+    public void setVerified(Boolean verified) {
+        isVerified = verified;
     }
 }

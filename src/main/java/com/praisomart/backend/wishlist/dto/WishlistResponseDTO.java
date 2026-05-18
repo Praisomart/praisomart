@@ -12,6 +12,7 @@ public class WishlistResponseDTO {
     private String imageUrl;
     private LocalDateTime addedAt;
     private boolean isActive;
+    private Long defaultVariantId;
 
     public WishlistResponseDTO() {}
 
@@ -74,5 +75,13 @@ public class WishlistResponseDTO {
 
     public void setWishlistId(Long wishlistId) {
         this.wishlistId = wishlistId;
+    }
+
+    public Long getDefaultVariantId() {
+        return defaultVariantId;
+    }
+
+    public void setDefaultVariantId(Long defaultVariantId) {
+        this.defaultVariantId = defaultVariantId;
     }
 }

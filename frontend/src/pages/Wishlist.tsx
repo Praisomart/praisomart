@@ -71,7 +71,7 @@ const Wishlist = () => {
                     <p className="text-primary font-bold mb-4">₹{item.price.toLocaleString()}</p>
                     
                     <button 
-                      onClick={() => addToCart.mutate({ productId: item.productId, quantity: 1 })}
+                      onClick={() => addToCart.mutate({ productVariantId: item.defaultVariantId || item.productId, quantity: 1 })}
                       className="w-full btn-emerald flex items-center justify-center gap-2 text-sm"
                     >
                       <ShoppingBag size={16} /> Add to Cart

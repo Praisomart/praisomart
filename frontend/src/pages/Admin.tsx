@@ -11,11 +11,156 @@ import { toast } from "sonner";
 import { apiFetch } from "@/lib/api";
 import { useProducts } from "@/hooks/use-products";
 import { useCategories } from "@/hooks/use-categories";
-import { Trash2, Edit } from "lucide-react";
+import { Trash2, Edit, Heart } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import { useAuth } from "@/contexts/AuthContext";
+
+const ImageInputSelector = ({
+  value,
+  onChange,
+  label,
+  placeholder = "https://images.unsplash.com/... or /images/..."
+}: {
+  value: string;
+  onChange: (val: string) => void;
+  label: string;
+  placeholder?: string;
+}) => {
+  const [mode, setMode] = useState<"url" | "upload">(value.startsWith("/uploads/") ? "upload" : "url");
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const token = localStorage.getItem("token");
+      const headers: Record<string, string> = {};
+      if (token) {
+        headers["Authorization"] = `Bearer ${token}`;
+      }
+
+      const res = await fetch("/api/admin/upload", {
+        method: "POST",
+        headers,
+        body: formData
+      });
+
+      if (!res.ok) {
+        let msg = "Failed to upload image";
+        try {
+          const err = await res.json();
+          msg = err.message || msg;
+        } catch (_) {}
+        throw new Error(msg);
+      }
+
+      const data = await res.json();
+      onChange(data.url);
+      toast.success("Image uploaded successfully!");
+    } catch (err: any) {
+      toast.error(err.message || "Failed to upload image");
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  return (
+    <div className="space-y-2">
+      <div className="flex justify-between items-center mb-1">
+        <label className="block text-xs font-bold uppercase tracking-wider text-muted-foreground">
+          {label}
+        </label>
+        <div className="flex bg-secondary/50 p-0.5 rounded-lg border text-[10px] font-bold">
+          <button
+            type="button"
+            onClick={() => setMode("url")}
+            className={`px-2 py-1 rounded-md transition-all ${mode === "url" ? "bg-background text-primary shadow-sm" : "text-muted-foreground"}`}
+          >
+            Manual URL
+          </button>
+          <button
+            type="button"
+            onClick={() => setMode("upload")}
+            className={`px-2 py-1 rounded-md transition-all ${mode === "upload" ? "bg-background text-primary shadow-sm" : "text-muted-foreground"}`}
+          >
+            Upload from PC
+          </button>
+        </div>
+      </div>
+
+      {mode === "url" ? (
+        <div className="space-y-2">
+          <input
+            type="text"
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+            placeholder={placeholder}
+            className="w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-1 focus:ring-primary bg-background text-sm font-sans"
+          />
+          {value && (
+            <div className="mt-2 relative h-20 w-36 rounded-xl overflow-hidden border bg-secondary/20 shadow-inner group">
+              <img src={value} alt="Preview" className="w-full h-full object-cover" />
+            </div>
+          )}
+        </div>
+      ) : (
+        <div className="space-y-2">
+          <input
+            type="file"
+            ref={fileInputRef}
+            onChange={handleFileChange}
+            accept="image/*"
+            className="hidden"
+          />
+          <div 
+            onClick={() => fileInputRef.current?.click()}
+            className={`w-full py-6 border-2 border-dashed rounded-xl flex flex-col items-center justify-center cursor-pointer transition-all hover:bg-secondary/10 hover:border-primary/50 relative overflow-hidden bg-background ${isUploading ? "pointer-events-none opacity-80" : ""}`}
+          >
+            {isUploading ? (
+              <div className="flex flex-col items-center gap-2">
+                <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                <span className="text-xs text-muted-foreground font-semibold animate-pulse">Uploading image...</span>
+              </div>
+            ) : value ? (
+              <div className="flex items-center gap-4 px-4 w-full justify-center">
+                <div className="h-12 w-20 rounded-lg overflow-hidden border bg-secondary/10 shrink-0 shadow-sm">
+                  <img src={value} alt="Uploaded" className="w-full h-full object-cover" />
+                </div>
+                <div className="text-left">
+                  <p className="text-xs font-bold text-emerald-600">Successfully Uploaded!</p>
+                  <p className="text-[10px] text-muted-foreground line-clamp-1 truncate max-w-[200px] font-mono">{value.split("/").pop()}</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={(e) => { e.stopPropagation(); onChange(""); }}
+                  className="p-1 rounded-full hover:bg-secondary text-destructive transition-colors ml-auto"
+                >
+                  <X size={14} />
+                </button>
+              </div>
+            ) : (
+              <div className="flex flex-col items-center text-center gap-1.5 p-3">
+                <Upload className="text-muted-foreground" size={24} />
+                <span className="text-xs font-semibold text-primary">Click to select image file from PC</span>
+                <span className="text-[10px] text-muted-foreground">PNG, JPG, WEBP, GIF up to 5MB</span>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
 
 const Admin = () => {
+  const { user: currentUser } = useAuth();
   const [activeTab, setActiveTab] = useState("dashboard");
   const [isLoading, setIsLoading] = useState(false);
   const [editingProduct, setEditingProduct] = useState<any>(null);
@@ -47,11 +192,56 @@ const Admin = () => {
     totalCustomers: 0
   });
   const [realOrders, setRealOrders] = useState<any[]>([]);
+  const [editingOrder, setEditingOrder] = useState<any>(null);
+  const [trackingForm, setTrackingForm] = useState({
+    trackingNumber: "",
+    courierService: "",
+    status: ""
+  });
+
+  // Customer Management States
+  const [users, setUsers] = useState<any[]>([]);
+  const [usersLoading, setUsersLoading] = useState(false);
+
+  // Marketing Campaign States
+  const [coupons, setCoupons] = useState<any[]>([]);
+  const [offers, setOffers] = useState<any[]>([]);
+  
+  // Coupon Form Modal States
+  const [showCouponModal, setShowCouponModal] = useState(false);
+  const [editingCoupon, setEditingCoupon] = useState<any>(null);
+  const [couponForm, setCouponForm] = useState({
+    id: undefined as number | undefined,
+    code: "",
+    discountPercentage: 20,
+    expiryDate: "",
+    active: true
+  });
+
+  // Pop Offer Form Modal States
+  const [showOfferModal, setShowOfferModal] = useState(false);
+  const [editingOffer, setEditingOffer] = useState<any>(null);
+  const [offerForm, setOfferForm] = useState({
+    id: undefined as number | undefined,
+    title: "",
+    description: "",
+    imageUrl: "",
+    couponCode: "",
+    expiryDate: "",
+    active: true
+  });
 
   useEffect(() => {
     if (activeTab === "dashboard") {
       fetchStats();
       fetchRecentOrders();
+    } else if (activeTab === "orders") {
+      fetchRecentOrders();
+    } else if (activeTab === "users") {
+      fetchUsers();
+    } else if (activeTab === "marketing") {
+      fetchCoupons();
+      fetchOffers();
     }
   }, [activeTab]);
 
@@ -67,6 +257,153 @@ const Admin = () => {
       const data = await apiFetch("/admin/dashboard/recent-orders");
       setRealOrders(data);
     } catch (e) {}
+  };
+
+  const fetchUsers = async () => {
+    setUsersLoading(true);
+    try {
+      const data = await apiFetch("/admin/dashboard/users");
+      setUsers(data);
+    } catch (e: any) {
+      toast.error(e.message || "Failed to load users list");
+    } finally {
+      setUsersLoading(false);
+    }
+  };
+
+  const handleToggleUserVerify = async (userId: number) => {
+    try {
+      await apiFetch(`/admin/dashboard/users/${userId}/toggle-verify`, {
+        method: "PUT"
+      });
+      toast.success("User verification status updated!");
+      fetchUsers();
+    } catch (e: any) {
+      toast.error(e.message || "Failed to update user verification");
+    }
+  };
+
+  const handleChangeUserRole = async (userId: number, newRole: string) => {
+    try {
+      await apiFetch(`/admin/dashboard/users/${userId}/change-role`, {
+        method: "PUT",
+        body: JSON.stringify({ role: newRole })
+      });
+      toast.success(`User role successfully changed to ${newRole}!`);
+      fetchUsers();
+    } catch (e: any) {
+      toast.error(e.message || "Failed to update user role");
+    }
+  };
+
+  const fetchCoupons = async () => {
+    try {
+      const data = await apiFetch("/admin/marketing/coupons");
+      setCoupons(data);
+    } catch (e) {}
+  };
+
+  const fetchOffers = async () => {
+    try {
+      const data = await apiFetch("/admin/marketing/offers");
+      setOffers(data);
+    } catch (e) {}
+  };
+
+  const handleSaveCoupon = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      let formattedExpiry = couponForm.expiryDate;
+      if (formattedExpiry && !formattedExpiry.includes("T")) {
+        formattedExpiry = `${formattedExpiry}T23:59:59`;
+      }
+      
+      await apiFetch("/admin/marketing/coupons", {
+        method: "POST",
+        body: JSON.stringify({
+          id: couponForm.id,
+          code: couponForm.code,
+          discountPercentage: Number(couponForm.discountPercentage),
+          expiryDate: formattedExpiry ? formattedExpiry : null,
+          active: couponForm.active
+        })
+      });
+      toast.success(couponForm.id ? "Coupon updated successfully!" : "Coupon created successfully!");
+      setShowCouponModal(false);
+      fetchCoupons();
+    } catch (e: any) {
+      toast.error(e.message || "Failed to save coupon");
+    }
+  };
+
+  const handleDeleteCoupon = async (id: number) => {
+    if (!confirm("Are you sure you want to delete this coupon?")) return;
+    try {
+      await apiFetch(`/admin/marketing/coupons/${id}`, {
+        method: "DELETE"
+      });
+      toast.success("Coupon deleted successfully!");
+      fetchCoupons();
+    } catch (e: any) {
+      toast.error(e.message || "Failed to delete coupon");
+    }
+  };
+
+  const handleSaveOffer = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      let formattedExpiry = offerForm.expiryDate;
+      if (formattedExpiry && !formattedExpiry.includes("T")) {
+        formattedExpiry = `${formattedExpiry}T23:59:59`;
+      }
+
+      await apiFetch("/admin/marketing/offers", {
+        method: "POST",
+        body: JSON.stringify({
+          id: offerForm.id,
+          title: offerForm.title,
+          description: offerForm.description,
+          imageUrl: offerForm.imageUrl,
+          couponCode: offerForm.couponCode,
+          expiryDate: formattedExpiry ? formattedExpiry : null,
+          active: offerForm.active
+        })
+      });
+      toast.success(offerForm.id ? "Pop Offer updated successfully!" : "Pop Offer created successfully!");
+      // Clear the popup session cache so it shows fresh on the homepage after any edit
+      sessionStorage.removeItem("hasSeenOffer");
+      setShowOfferModal(false);
+      fetchOffers();
+    } catch (e: any) {
+      toast.error(e.message || "Failed to save offer");
+    }
+  };
+
+  const handleDeleteOffer = async (id: number) => {
+    if (!confirm("Are you sure you want to delete this offer?")) return;
+    try {
+      await apiFetch(`/admin/marketing/offers/${id}`, {
+        method: "DELETE"
+      });
+      toast.success("Pop Offer deleted successfully!");
+      fetchOffers();
+    } catch (e: any) {
+      toast.error(e.message || "Failed to delete offer");
+    }
+  };
+
+  const handleSaveTracking = async (orderId: number) => {
+    try {
+      await apiFetch(`/admin/dashboard/orders/${orderId}/tracking`, {
+        method: "PUT",
+        body: JSON.stringify(trackingForm)
+      });
+      toast.success("Order tracking details updated!");
+      setEditingOrder(null);
+      fetchRecentOrders();
+    } catch (e: any) {
+      toast.error(e.message || "Failed to update tracking");
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -292,6 +629,12 @@ const Admin = () => {
             >
               <Users size={18} /> Customers
             </button>
+            <button 
+              onClick={() => setActiveTab("marketing")}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl transition-all ${activeTab === "marketing" ? "bg-primary text-primary-foreground shadow-lg shadow-primary/20" : "hover:bg-secondary text-muted-foreground"}`}
+            >
+              <Tag size={18} /> Marketing & Offers
+            </button>
           </div>
         </div>
 
@@ -447,8 +790,10 @@ const Admin = () => {
                       </div>
                       <div className="space-y-3">
                         <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Base Description</label>
-                        <input 
-                          className="w-full px-5 py-4 rounded-2xl border bg-background focus:ring-2 focus:ring-primary/20 outline-none"
+                        <textarea
+                          rows={5}
+                          placeholder="Describe this product in detail..."
+                          className="w-full px-5 py-4 rounded-2xl border bg-background focus:ring-2 focus:ring-primary/20 outline-none resize-none text-sm leading-relaxed"
                           value={productData.description}
                           onChange={e => setProductData({...productData, description: e.target.value})}
                         />
@@ -793,7 +1138,8 @@ const Admin = () => {
                             <Edit size={18} />
                           </button>
                           <button 
-                            className="w-11 h-11 flex items-center justify-center rounded-2xl bg-destructive/10 text-destructive hover:bg-destructive hover:text-white transition-all"
+                            disabled={currentUser?.role === 'MINOR_ADMIN'}
+                            className="w-11 h-11 flex items-center justify-center rounded-2xl bg-destructive/10 text-destructive hover:bg-destructive hover:text-white transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-destructive/10 disabled:hover:text-destructive"
                             onClick={async () => {
                               if (confirm(`Archive product ${product.name}?`)) {
                                 try {
@@ -805,7 +1151,7 @@ const Admin = () => {
                                 }
                               }
                             }}
-                            title="Archive Product"
+                            title={currentUser?.role === 'MINOR_ADMIN' ? "Super Admin privileges required to archive products" : "Archive Product"}
                           >
                             <Trash2 size={18} />
                           </button>
@@ -862,13 +1208,10 @@ const Admin = () => {
                         />
                       </div>
                       <div className="space-y-2">
-                        <label className="text-[10px] font-bold text-muted-foreground ml-1">IMAGE URL</label>
-                        <input 
-                          placeholder="Image URL"
-                          className="w-full px-5 py-4 rounded-2xl border bg-background"
+                        <ImageInputSelector
+                          label="Category Banner Image"
                           value={categoryData.imageUrl}
-                          onChange={e => setCategoryData({...categoryData, imageUrl: e.target.value})}
-                          required
+                          onChange={url => setCategoryData({...categoryData, imageUrl: url})}
                         />
                       </div>
                     </div>
@@ -909,7 +1252,9 @@ const Admin = () => {
                           </div>
                         </div>
                         <button 
-                          className="w-10 h-10 flex items-center justify-center rounded-xl hover:bg-destructive/10 text-destructive transition-colors"
+                          disabled={currentUser?.role === 'MINOR_ADMIN'}
+                          className="w-10 h-10 flex items-center justify-center rounded-xl hover:bg-destructive/10 text-destructive transition-colors disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent"
+                          title={currentUser?.role === 'MINOR_ADMIN' ? "Super Admin privileges required to delete departments" : "Remove Category"}
                           onClick={async () => {
                             if (confirm(`Remove category ${cat.name}?`)) {
                               try {
@@ -931,24 +1276,722 @@ const Admin = () => {
               )}
 
               {activeTab === "orders" && (
-                <div className="flex flex-col items-center justify-center py-20 text-center">
-                  <div className="w-24 h-24 rounded-full bg-secondary flex items-center justify-center text-primary mb-6 animate-pulse">
-                    <ShoppingCart size={40} />
+                <div className="bg-card border p-8 rounded-[2.5rem] shadow-sm space-y-6">
+                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
+                    <div>
+                      <h3 className="font-display text-2xl font-bold">Order Fulfilment</h3>
+                      <p className="text-sm text-muted-foreground">Manage shipping courier, tracking details, and delivery statuses</p>
+                    </div>
                   </div>
-                  <h3 className="text-2xl font-bold mb-2">Order Management</h3>
-                  <p className="text-muted-foreground max-w-md mx-auto">This module is currently being finalized. You will soon be able to track, ship, and manage customer returns here.</p>
+
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left border-collapse">
+                      <thead>
+                        <tr className="border-b text-xs font-bold text-muted-foreground uppercase tracking-wider">
+                          <th className="py-4 px-2">Order ID</th>
+                          <th className="py-4 px-2">Customer</th>
+                          <th className="py-4 px-2">Date</th>
+                          <th className="py-4 px-2">Amount</th>
+                          <th className="py-4 px-2">Payment</th>
+                          <th className="py-4 px-2">Status</th>
+                          <th className="py-4 px-2">Courier / Tracking</th>
+                          <th className="py-4 px-2 text-right">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y text-sm">
+                        {realOrders.map((order) => (
+                          <tr key={order.id} className="hover:bg-secondary/20 transition-colors">
+                            <td className="py-4 px-2 font-mono font-bold text-primary">#{order.id}</td>
+                            <td className="py-4 px-2">
+                              <p className="font-bold">{order.user?.name || "Guest"}</p>
+                              <p className="text-xs text-muted-foreground">{order.user?.email}</p>
+                            </td>
+                            <td className="py-4 px-2">{order.createdAt ? new Date(order.createdAt).toLocaleDateString() : 'N/A'}</td>
+                            <td className="py-4 px-2 font-bold">₹{order.totalAmount?.toLocaleString()}</td>
+                            <td className="py-4 px-2">
+                              <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase ${order.paymentMode === 'COD' ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800'}`}>
+                                {order.paymentMode || 'ONLINE'}
+                              </span>
+                            </td>
+                            <td className="py-4 px-2">
+                              <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full uppercase ${
+                                order.status === 'DELIVERED' ? 'bg-emerald-100 text-emerald-800' :
+                                order.status === 'SHIPPED' || order.status === 'IN_TRANSIT' ? 'bg-sky-100 text-sky-800' :
+                                order.status === 'CANCELLED' ? 'bg-destructive/10 text-destructive' :
+                                'bg-amber-100 text-amber-800'
+                              }`}>
+                                {order.status}
+                              </span>
+                            </td>
+                            <td className="py-4 px-2 text-xs">
+                              {order.courierService ? (
+                                <div>
+                                  <p className="font-semibold text-foreground">{order.courierService}</p>
+                                  <p className="text-muted-foreground font-mono">{order.trackingNumber}</p>
+                                </div>
+                              ) : (
+                                <span className="text-muted-foreground italic">Not Shipped</span>
+                              )}
+                            </td>
+                            <td className="py-4 px-2 text-right">
+                              <button
+                                onClick={() => {
+                                  setEditingOrder(order);
+                                  setTrackingForm({
+                                    trackingNumber: order.trackingNumber || "",
+                                    courierService: order.courierService || "",
+                                    status: order.status || "PENDING"
+                                  });
+                                }}
+                                className="px-4 py-2 bg-primary/5 text-primary hover:bg-primary hover:text-primary-foreground font-bold rounded-xl text-xs transition-all"
+                              >
+                                Edit Tracking
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  {/* Tracking Edit Modal */}
+                  <AnimatePresence>
+                    {editingOrder && (
+                      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+                        <motion.div
+                          initial={{ opacity: 0, scale: 0.95 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          exit={{ opacity: 0, scale: 0.95 }}
+                          className="bg-card max-w-md w-full border rounded-[2rem] p-6 shadow-2xl space-y-6 text-foreground"
+                        >
+                          <div className="flex justify-between items-center border-b pb-4">
+                            <h4 className="font-display font-bold text-xl">Ship Order #{editingOrder.id}</h4>
+                            <button onClick={() => setEditingOrder(null)} className="p-1 hover:bg-secondary rounded-full">
+                              <X size={18} />
+                            </button>
+                          </div>
+                          
+                          <div className="space-y-4">
+                            <div className="space-y-1">
+                              <label className="text-xs font-bold text-muted-foreground uppercase">Courier Service</label>
+                              <input
+                                placeholder="e.g. BlueDart, Delhivery"
+                                className="w-full px-4 py-3 rounded-xl border bg-background text-sm"
+                                value={trackingForm.courierService}
+                                onChange={e => setTrackingForm({...trackingForm, courierService: e.target.value})}
+                              />
+                            </div>
+                            <div className="space-y-1">
+                              <label className="text-xs font-bold text-muted-foreground uppercase">Tracking Number</label>
+                              <input
+                                placeholder="e.g. 1234567890"
+                                className="w-full px-4 py-3 rounded-xl border bg-background text-sm"
+                                value={trackingForm.trackingNumber}
+                                onChange={e => setTrackingForm({...trackingForm, trackingNumber: e.target.value})}
+                              />
+                            </div>
+                            <div className="space-y-1">
+                              <label className="text-xs font-bold text-muted-foreground uppercase">Fulfilment Status</label>
+                              <select
+                                className="w-full px-4 py-3 rounded-xl border bg-background text-sm"
+                                value={trackingForm.status}
+                                onChange={e => setTrackingForm({...trackingForm, status: e.target.value})}
+                              >
+                                <option value="PENDING">PENDING</option>
+                                <option value="PAID">PAID</option>
+                                <option value="SHIPPED">SHIPPED</option>
+                                <option value="IN_TRANSIT">IN TRANSIT</option>
+                                <option value="DELIVERED">DELIVERED</option>
+                                <option value="CANCELLED">CANCELLED</option>
+                              </select>
+                            </div>
+                          </div>
+
+                          <div className="flex gap-3 pt-2">
+                            <button
+                              onClick={() => handleSaveTracking(editingOrder.id)}
+                              className="flex-1 bg-primary text-primary-foreground font-bold py-3 rounded-xl text-sm"
+                            >
+                              Save Details
+                            </button>
+                            <button
+                              onClick={() => setEditingOrder(null)}
+                              className="px-5 border font-semibold py-3 rounded-xl text-sm hover:bg-secondary"
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        </motion.div>
+                      </div>
+                    )}
+                  </AnimatePresence>
                 </div>
               )}
 
               {activeTab === "users" && (
-                <div className="flex flex-col items-center justify-center py-20 text-center">
-                  <div className="w-24 h-24 rounded-full bg-secondary flex items-center justify-center text-primary mb-6 animate-pulse">
-                    <Users size={40} />
+                <div className="bg-card border p-8 rounded-[2.5rem] shadow-sm space-y-6">
+                  <div className="flex justify-between items-center mb-4">
+                    <div>
+                      <div className="flex items-center gap-3">
+                        <h3 className="font-display text-2xl font-bold">Customer Directory</h3>
+                        {currentUser?.role === 'MINOR_ADMIN' && (
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-500/10 text-amber-600 border border-amber-500/25">
+                            Minor Admin View Only
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-sm text-muted-foreground">
+                        {currentUser?.role === 'MINOR_ADMIN' 
+                          ? "Browse active shopper profiles and verification statuses (Super Admin required for changes)" 
+                          : "Manage active shopper profiles, account verifications, and administrator privileges"
+                        }
+                      </p>
+                    </div>
+                    <div className="flex gap-2">
+                      <div className="relative">
+                        <Search className="absolute left-3 top-2.5 text-muted-foreground" size={16} />
+                        <input
+                          type="text"
+                          placeholder="Search customers..."
+                          value={searchQuery}
+                          onChange={(e) => setSearchQuery(e.target.value)}
+                          className="pl-9 pr-4 py-2 border rounded-xl text-sm focus:outline-none focus:ring-1 focus:ring-primary w-64 bg-background"
+                        />
+                      </div>
+                    </div>
                   </div>
-                  <h3 className="text-2xl font-bold mb-2">Customer CRM</h3>
-                  <p className="text-muted-foreground max-w-md mx-auto">Customer relationship management features are coming soon. You'll be able to view user history, award loyalty points, and more.</p>
+
+                  {usersLoading ? (
+                    <div className="text-center py-12 text-muted-foreground">Loading customer directory...</div>
+                  ) : (
+                    <div className="overflow-x-auto rounded-2xl border">
+                      <table className="w-full text-left border-collapse">
+                        <thead>
+                          <tr className="bg-secondary/50 border-b text-xs font-bold text-muted-foreground uppercase">
+                            <th className="p-4">Customer</th>
+                            <th className="p-4">Contact</th>
+                            <th className="p-4">Role</th>
+                            <th className="p-4">Status</th>
+                            <th className="p-4">Registered On</th>
+                            <th className="p-4 text-right">Moderation</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y text-sm">
+                          {users
+                            .filter(u => 
+                              u.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                              u.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                              (u.phoneNumber && u.phoneNumber.includes(searchQuery))
+                            )
+                            .map((userItem) => (
+                              <tr key={userItem.id} className="hover:bg-secondary/20 transition-colors">
+                                <td className="p-4 font-semibold">{userItem.name}</td>
+                                <td className="p-4 text-muted-foreground">
+                                  <div>{userItem.email}</div>
+                                  <div className="text-xs">{userItem.phoneNumber || "N/A"}</div>
+                                </td>
+                                <td className="p-4">
+                                  <select
+                                    value={userItem.role}
+                                    onChange={(e) => handleChangeUserRole(userItem.id, e.target.value)}
+                                    disabled={currentUser?.role === 'MINOR_ADMIN' || userItem.email === currentUser?.email}
+                                    className={`px-2.5 py-1.5 rounded-xl text-xs font-bold bg-background border focus:outline-none focus:ring-1 focus:ring-primary transition-all disabled:opacity-75 disabled:cursor-not-allowed ${
+                                      userItem.role === 'ADMIN' 
+                                        ? 'text-primary border-primary/20 bg-primary/5 hover:bg-primary/10' 
+                                        : userItem.role === 'MINOR_ADMIN'
+                                          ? 'text-amber-600 border-amber-500/20 bg-amber-500/5 hover:bg-amber-500/10'
+                                          : 'text-muted-foreground border-border bg-secondary/30 hover:bg-secondary/50'
+                                    }`}
+                                  >
+                                    <option value="USER">USER</option>
+                                    <option value="MINOR_ADMIN">MINOR ADMIN</option>
+                                    <option value="ADMIN">ADMIN</option>
+                                  </select>
+                                </td>
+                                <td className="p-4">
+                                  <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium ${userItem.isVerified ? 'bg-emerald-500/10 text-emerald-600' : 'bg-amber-500/10 text-amber-600'}`}>
+                                    <span className={`w-1.5 h-1.5 rounded-full ${userItem.isVerified ? 'bg-emerald-500' : 'bg-amber-500'}`} />
+                                    {userItem.isVerified ? 'Verified' : 'Blocked / Unverified'}
+                                  </span>
+                                </td>
+                                <td className="p-4 text-muted-foreground">
+                                  {userItem.createdAt ? new Date(userItem.createdAt).toLocaleDateString("en-US", { year: 'numeric', month: 'short', day: 'numeric' }) : "N/A"}
+                                </td>
+                                <td className="p-4 text-right">
+                                  <button
+                                    onClick={() => handleToggleUserVerify(userItem.id)}
+                                    disabled={currentUser?.role === 'MINOR_ADMIN' || userItem.email === currentUser?.email}
+                                    className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all border disabled:opacity-50 disabled:cursor-not-allowed ${
+                                      userItem.isVerified 
+                                        ? 'hover:bg-destructive/10 text-destructive border-destructive/20 hover:border-destructive/30' 
+                                        : 'hover:bg-primary/10 text-primary border-primary/20 hover:border-primary/30'
+                                    }`}
+                                  >
+                                    {userItem.isVerified ? 'Block Account' : 'Verify Account'}
+                                  </button>
+                                </td>
+                              </tr>
+                            ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
                 </div>
               )}
+
+              {activeTab === "marketing" && (
+                <div className="space-y-10">
+                  {/* Header */}
+                  <div className="flex flex-col md:flex-row justify-between md:items-center gap-4 bg-card border p-6 rounded-[2rem] shadow-sm animate-fade-in">
+                    <div>
+                      <h3 className="font-display text-3xl font-bold flex items-center gap-2">
+                        <Tag className="text-primary" /> Marketing Campaign Hub
+                      </h3>
+                      <p className="text-sm text-muted-foreground mt-1">Design exclusive store discount codes and pop-up announcement offers</p>
+                    </div>
+                  </div>
+
+                  {/* Coupons Section */}
+                  <div className="bg-card border p-8 rounded-[2.5rem] shadow-sm space-y-6">
+                    <div className="flex justify-between items-center">
+                      <div>
+                        <h4 className="font-display text-xl font-bold">Dynamic Promo Coupons</h4>
+                        <p className="text-sm text-muted-foreground">Control and manage promotional coupon codes and their active expiry dates</p>
+                      </div>
+                      <button
+                        onClick={() => {
+                          setEditingCoupon(null);
+                          setCouponForm({ id: undefined, code: "", discountPercentage: 20, expiryDate: "", active: true });
+                          setShowCouponModal(true);
+                        }}
+                        className="bg-primary text-primary-foreground font-semibold px-4 py-2 rounded-xl text-sm flex items-center gap-2 hover:opacity-90 shadow-md transition-all active:scale-95"
+                      >
+                        <Plus size={16} /> Add Promo Code
+                      </button>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                      {coupons.map((coupon) => {
+                        const isExpired = coupon.expiryDate && new Date(coupon.expiryDate) < new Date();
+                        return (
+                          <div key={coupon.id} className="relative bg-secondary/20 border rounded-[2rem] p-6 space-y-4 hover:shadow-md transition-all hover:bg-secondary/30">
+                            <div className="flex justify-between items-start">
+                              <span className="font-mono text-lg font-bold bg-primary text-primary-foreground px-3 py-1 rounded-xl tracking-wider uppercase">
+                                {coupon.code}
+                              </span>
+                              <div className="flex gap-1">
+                                <button
+                                  onClick={() => {
+                                    setEditingCoupon(coupon);
+                                    setCouponForm({
+                                      id: coupon.id,
+                                      code: coupon.code,
+                                      discountPercentage: coupon.discountPercentage,
+                                      expiryDate: coupon.expiryDate ? coupon.expiryDate.split("T")[0] : "",
+                                      active: coupon.active
+                                    });
+                                    setShowCouponModal(true);
+                                  }}
+                                  className="p-2 text-muted-foreground hover:bg-background rounded-full transition-colors"
+                                >
+                                  <Edit size={14} />
+                                </button>
+                                <button
+                                  disabled={currentUser?.role === 'MINOR_ADMIN'}
+                                  onClick={() => handleDeleteCoupon(coupon.id)}
+                                  className="p-2 text-destructive hover:bg-background rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent"
+                                  title={currentUser?.role === 'MINOR_ADMIN' ? "Super Admin privileges required to delete coupons" : "Delete Coupon"}
+                                >
+                                  <Trash2 size={14} />
+                                </button>
+                              </div>
+                            </div>
+                            <div>
+                              <div className="text-3xl font-extrabold text-primary font-display">
+                                {coupon.discountPercentage}% OFF
+                              </div>
+                              <p className="text-xs text-muted-foreground mt-1">Flat storewide discount on checkout</p>
+                            </div>
+                            <div className="border-t pt-3 flex justify-between items-center text-xs">
+                              <div>
+                                <span className="font-medium text-muted-foreground">Validity:</span>{" "}
+                                <span className={`font-semibold ${isExpired ? 'text-destructive' : 'text-foreground'}`}>
+                                  {coupon.expiryDate 
+                                    ? new Date(coupon.expiryDate).toLocaleDateString("en-US", { month: 'short', day: 'numeric', year: 'numeric' })
+                                    : "Lifetime"}
+                                </span>
+                              </div>
+                              <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold ${coupon.active && !isExpired ? 'bg-emerald-500/10 text-emerald-600' : 'bg-rose-500/10 text-rose-600'}`}>
+                                <span className={`w-1.5 h-1.5 rounded-full ${coupon.active && !isExpired ? 'bg-emerald-500' : 'bg-rose-500'}`} />
+                                {isExpired ? 'Expired' : coupon.active ? 'Active' : 'Disabled'}
+                              </span>
+                            </div>
+                          </div>
+                        );
+                      })}
+                      {coupons.length === 0 && (
+                        <div className="col-span-full text-center py-8 text-muted-foreground border-2 border-dashed rounded-[2rem]">
+                          No coupon codes found. Click "Add Promo Code" to get started!
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Pop Offers Section */}
+                  <div className="bg-card border p-8 rounded-[2.5rem] shadow-sm space-y-6">
+                    <div className="flex justify-between items-center">
+                      <div>
+                        <h4 className="font-display text-xl font-bold">Pop-Up Storefront Offers</h4>
+                        <p className="text-sm text-muted-foreground">Manage pop-up banner campaigns loaded on the storefront home page</p>
+                      </div>
+                      <button
+                        onClick={() => {
+                          setEditingOffer(null);
+                          setOfferForm({ id: undefined, title: "", description: "", imageUrl: "", couponCode: "", expiryDate: "", active: true });
+                          setShowOfferModal(true);
+                        }}
+                        className="bg-primary text-primary-foreground font-semibold px-4 py-2 rounded-xl text-sm flex items-center gap-2 hover:opacity-90 shadow-md transition-all active:scale-95"
+                      >
+                        <Plus size={16} /> Add Pop Banner
+                      </button>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                      {offers.map((offer) => {
+                        const isExpired = offer.expiryDate && new Date(offer.expiryDate) < new Date();
+                        return (
+                          <div key={offer.id} className="bg-secondary/20 border rounded-[2.5rem] overflow-hidden flex flex-col hover:shadow-md transition-all hover:bg-secondary/30">
+                            {offer.imageUrl && (
+                              <div className="h-44 w-full relative bg-muted overflow-hidden">
+                                <img
+                                  src={offer.imageUrl}
+                                  alt={offer.title}
+                                  className="w-full h-full object-cover"
+                                />
+                                <div className="absolute top-4 right-4 flex gap-1">
+                                  <button
+                                    onClick={() => {
+                                      setEditingOffer(offer);
+                                      setOfferForm({
+                                        id: offer.id,
+                                        title: offer.title,
+                                        description: offer.description,
+                                        imageUrl: offer.imageUrl || "",
+                                        couponCode: offer.couponCode || "",
+                                        expiryDate: offer.expiryDate ? offer.expiryDate.split("T")[0] : "",
+                                        active: offer.active
+                                      });
+                                      setShowOfferModal(true);
+                                    }}
+                                    className="p-2 bg-background/95 hover:bg-background rounded-full shadow-sm text-muted-foreground transition-colors"
+                                  >
+                                    <Edit size={14} />
+                                  </button>
+                                  <button
+                                    disabled={currentUser?.role === 'MINOR_ADMIN'}
+                                    onClick={() => handleDeleteOffer(offer.id)}
+                                    className="p-2 bg-background/95 hover:bg-background rounded-full shadow-sm text-destructive transition-colors disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-background/95"
+                                    title={currentUser?.role === 'MINOR_ADMIN' ? "Super Admin privileges required to delete offers" : "Delete Offer"}
+                                  >
+                                    <Trash2 size={14} />
+                                  </button>
+                                </div>
+                              </div>
+                            )}
+                            <div className="p-6 flex-1 flex flex-col justify-between space-y-4">
+                              <div className="space-y-2">
+                                <div className="flex justify-between items-start gap-2">
+                                  <h5 className="font-display font-bold text-lg text-primary">{offer.title}</h5>
+                                  {!offer.imageUrl && (
+                                    <div className="flex gap-1 shrink-0">
+                                      <button
+                                        onClick={() => {
+                                          setEditingOffer(offer);
+                                          setOfferForm({
+                                            id: offer.id,
+                                            title: offer.title,
+                                            description: offer.description,
+                                            imageUrl: offer.imageUrl || "",
+                                            couponCode: offer.couponCode || "",
+                                            expiryDate: offer.expiryDate ? offer.expiryDate.split("T")[0] : "",
+                                            active: offer.active
+                                          });
+                                          setShowOfferModal(true);
+                                        }}
+                                        className="p-1.5 text-muted-foreground hover:bg-background rounded-full transition-colors"
+                                      >
+                                        <Edit size={14} />
+                                      </button>
+                                      <button
+                                        disabled={currentUser?.role === 'MINOR_ADMIN'}
+                                        onClick={() => handleDeleteOffer(offer.id)}
+                                        className="p-1.5 text-destructive hover:bg-background rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent"
+                                        title={currentUser?.role === 'MINOR_ADMIN' ? "Super Admin privileges required to delete offers" : "Delete Offer"}
+                                      >
+                                        <Trash2 size={14} />
+                                      </button>
+                                    </div>
+                                  )}
+                                </div>
+                                <p className="text-sm text-muted-foreground line-clamp-3">{offer.description}</p>
+                              </div>
+
+                              <div className="space-y-3 pt-3 border-t">
+                                <div className="flex justify-between items-center text-xs">
+                                  <span className="text-muted-foreground font-medium">Associated Coupon:</span>
+                                  <span className="font-mono bg-primary/10 text-primary font-bold px-2 py-0.5 rounded-lg">
+                                    {offer.couponCode || "None"}
+                                  </span>
+                                </div>
+                                <div className="flex justify-between items-center text-xs">
+                                  <span className="text-muted-foreground font-medium">Campaign Expiry:</span>
+                                  <span className={`font-semibold ${isExpired ? 'text-destructive' : 'text-foreground'}`}>
+                                    {offer.expiryDate
+                                      ? new Date(offer.expiryDate).toLocaleDateString("en-US", { month: 'short', day: 'numeric', year: 'numeric' })
+                                      : "Ongoing"}
+                                  </span>
+                                </div>
+                                <div className="flex justify-between items-center text-xs">
+                                  <span className="text-muted-foreground font-medium">Banner Status:</span>
+                                  <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold ${offer.active && !isExpired ? 'bg-emerald-500/10 text-emerald-600' : 'bg-rose-500/10 text-rose-600'}`}>
+                                    <span className={`w-1.5 h-1.5 rounded-full ${offer.active && !isExpired ? 'bg-emerald-500' : 'bg-rose-500'}`} />
+                                    {isExpired ? 'Expired' : offer.active ? 'Active' : 'Disabled'}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                      {offers.length === 0 && (
+                        <div className="col-span-full text-center py-12 text-muted-foreground border-2 border-dashed rounded-[2.5rem]">
+                          No storefront pop-up banner offers created. Click "Add Pop Banner" to design one!
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* ================= COUPON MODAL ================= */}
+                  <AnimatePresence>
+                    {showCouponModal && (
+                      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm">
+                        <motion.div
+                          initial={{ opacity: 0, scale: 0.95 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          exit={{ opacity: 0, scale: 0.95 }}
+                          className="bg-card border rounded-[2rem] p-8 w-full max-w-md shadow-2xl relative"
+                        >
+                          <button
+                            onClick={() => setShowCouponModal(false)}
+                            className="absolute top-6 right-6 text-muted-foreground hover:text-foreground transition-colors"
+                          >
+                            <X size={20} />
+                          </button>
+
+                          <h4 className="font-display text-2xl font-bold mb-6">
+                            {editingCoupon ? "Edit Coupon Details" : "Create New Coupon"}
+                          </h4>
+
+                          <form onSubmit={handleSaveCoupon} className="space-y-4">
+                            <div>
+                              <label className="block text-xs font-bold uppercase tracking-wider text-muted-foreground mb-1.5">
+                                Coupon Code
+                              </label>
+                              <input
+                                type="text"
+                                required
+                                value={couponForm.code}
+                                onChange={(e) => setCouponForm({ ...couponForm, code: e.target.value })}
+                                placeholder="e.g. SILK20"
+                                className="w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-1 focus:ring-primary bg-background font-mono font-bold tracking-widest text-lg text-primary uppercase"
+                              />
+                            </div>
+
+                            <div>
+                              <label className="block text-xs font-bold uppercase tracking-wider text-muted-foreground mb-1.5">
+                                Discount Percentage (%)
+                              </label>
+                              <input
+                                type="number"
+                                required
+                                min="1"
+                                max="100"
+                                value={couponForm.discountPercentage}
+                                onChange={(e) => setCouponForm({ ...couponForm, discountPercentage: Number(e.target.value) })}
+                                className="w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-1 focus:ring-primary bg-background font-bold text-lg"
+                              />
+                            </div>
+
+                            <div>
+                              <label className="block text-xs font-bold uppercase tracking-wider text-muted-foreground mb-1.5">
+                                Validity Expiry Date (Optional)
+                              </label>
+                              <input
+                                type="date"
+                                value={couponForm.expiryDate}
+                                onChange={(e) => setCouponForm({ ...couponForm, expiryDate: e.target.value })}
+                                className="w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-1 focus:ring-primary bg-background text-sm"
+                              />
+                            </div>
+
+                            <div className="flex items-center gap-3 py-2">
+                              <input
+                                type="checkbox"
+                                id="couponActive"
+                                checked={couponForm.active}
+                                onChange={(e) => setCouponForm({ ...couponForm, active: e.target.checked })}
+                                className="w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary"
+                              />
+                              <label htmlFor="couponActive" className="text-sm font-semibold select-none cursor-pointer">
+                                Active & Available on Checkout
+                              </label>
+                            </div>
+
+                            <div className="flex gap-3 pt-4">
+                              <button
+                                type="submit"
+                                className="flex-1 bg-primary text-primary-foreground font-bold py-3 rounded-xl text-sm shadow-md transition-all active:scale-95"
+                              >
+                                Save Coupon
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setShowCouponModal(false)}
+                                className="px-5 border font-semibold py-3 rounded-xl text-sm hover:bg-secondary transition-colors"
+                              >
+                                Cancel
+                              </button>
+                            </div>
+                          </form>
+                        </motion.div>
+                      </div>
+                    )}
+                  </AnimatePresence>
+
+                  {/* ================= POP OFFER MODAL ================= */}
+                  <AnimatePresence>
+                    {showOfferModal && (
+                      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm">
+                        <motion.div
+                          initial={{ opacity: 0, scale: 0.95 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          exit={{ opacity: 0, scale: 0.95 }}
+                          className="bg-card border rounded-[2.5rem] p-8 w-full max-w-lg shadow-2xl relative overflow-y-auto max-h-[90vh]"
+                        >
+                          <button
+                            onClick={() => setShowOfferModal(false)}
+                            className="absolute top-6 right-6 text-muted-foreground hover:text-foreground transition-colors"
+                          >
+                            <X size={20} />
+                          </button>
+
+                          <h4 className="font-display text-2xl font-bold mb-6">
+                            {editingOffer ? "Edit Pop Offer Campaign" : "Design New Storefront Pop Banner"}
+                          </h4>
+
+                          <form onSubmit={handleSaveOffer} className="space-y-4">
+                            <div>
+                              <label className="block text-xs font-bold uppercase tracking-wider text-muted-foreground mb-1.5">
+                                Offer Title
+                              </label>
+                              <input
+                                type="text"
+                                required
+                                value={offerForm.title}
+                                onChange={(e) => setOfferForm({ ...offerForm, title: e.target.value })}
+                                placeholder="e.g. Midnight Luxury Silk Sale"
+                                className="w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-1 focus:ring-primary bg-background font-semibold"
+                              />
+                            </div>
+
+                            <div>
+                              <label className="block text-xs font-bold uppercase tracking-wider text-muted-foreground mb-1.5">
+                                Offer Description / Terms
+                              </label>
+                              <textarea
+                                required
+                                rows={5}
+                                value={offerForm.description}
+                                onChange={(e) => setOfferForm({ ...offerForm, description: e.target.value })}
+                                placeholder="Details about this limited campaign..."
+                                className="w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-1 focus:ring-primary bg-background text-sm resize-y"
+                              />
+                            </div>
+
+                            <div>
+                              <ImageInputSelector
+                                label="Banner Image"
+                                value={offerForm.imageUrl}
+                                onChange={url => setOfferForm({ ...offerForm, imageUrl: url })}
+                              />
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4">
+                              <div>
+                                <label className="block text-xs font-bold uppercase tracking-wider text-muted-foreground mb-1.5">
+                                  Associated Coupon Code (Optional)
+                                </label>
+                                <select
+                                  value={offerForm.couponCode}
+                                  onChange={(e) => setOfferForm({ ...offerForm, couponCode: e.target.value })}
+                                  className="w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-1 focus:ring-primary bg-background text-sm"
+                                >
+                                  <option value="">None / Informational only</option>
+                                  {coupons.map(c => (
+                                    <option key={c.id} value={c.code}>{c.code} ({c.discountPercentage}%)</option>
+                                  ))}
+                                </select>
+                              </div>
+
+                              <div>
+                                <label className="block text-xs font-bold uppercase tracking-wider text-muted-foreground mb-1.5">
+                                  Expiry Validity (Optional)
+                                </label>
+                                <input
+                                  type="date"
+                                  value={offerForm.expiryDate}
+                                  onChange={(e) => setOfferForm({ ...offerForm, expiryDate: e.target.value })}
+                                  className="w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-1 focus:ring-primary bg-background text-sm"
+                                />
+                              </div>
+                            </div>
+
+                            <div className="flex items-center gap-3 py-2">
+                              <input
+                                type="checkbox"
+                                id="offerActive"
+                                checked={offerForm.active}
+                                onChange={(e) => setOfferForm({ ...offerForm, active: e.target.checked })}
+                                className="w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary"
+                              />
+                              <label htmlFor="offerActive" className="text-sm font-semibold select-none cursor-pointer">
+                                Active & Visible to Shoppers on home screen pop-up
+                              </label>
+                            </div>
+
+                            <div className="flex gap-3 pt-4">
+                              <button
+                                type="submit"
+                                className="flex-1 bg-primary text-primary-foreground font-bold py-3 rounded-xl text-sm shadow-md transition-all active:scale-95"
+                              >
+                                Save Pop Campaign
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setShowOfferModal(false)}
+                                className="px-5 border font-semibold py-3 rounded-xl text-sm hover:bg-secondary transition-colors"
+                              >
+                                Cancel
+                              </button>
+                            </div>
+                          </form>
+                        </motion.div>
+                      </div>
+                    )}
+                  </AnimatePresence>
+                </div>
+              )}
+
             </motion.div>
           </AnimatePresence>
         </div>
