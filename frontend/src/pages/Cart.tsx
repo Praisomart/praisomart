@@ -167,7 +167,7 @@ const Cart = () => {
         });
 
         const options = {
-          key: "rzp_live_SkSGovDRFxRBQt", // Live key provided
+          key: import.meta.env.VITE_RAZORPAY_KEY_ID, // Live key provided
           amount: Math.round(amountInRupees * 100), // Razorpay expects paise here
           currency: "INR",
           name: "Praisomart",
