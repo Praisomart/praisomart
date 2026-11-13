@@ -7,6 +7,7 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { apiFetch } from "@/lib/api";
 import { useAuth } from "@/contexts/AuthContext";
+import OrderHistory from "@/components/OrderHistory";
 
 const Profile = () => {
   const { user, token } = useAuth();
@@ -301,17 +302,8 @@ const Profile = () => {
             </motion.div>
           )}
 
-          {/* Orders Tab Placeholder */}
-          {activeTab === "orders" && (
-            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="text-center py-20 bg-secondary/10 rounded-3xl border border-dashed">
-              <Package size={48} className="mx-auto text-muted-foreground opacity-50 mb-4" />
-              <h3 className="text-xl font-bold mb-2">No Orders Yet</h3>
-              <p className="text-muted-foreground mb-6 max-w-md mx-auto">Looks like you haven't made any purchases yet. Explore our collection to find something beautiful.</p>
-              <Link to="/products" className="inline-flex items-center gap-2 bg-primary text-primary-foreground px-8 py-3 rounded-full font-bold shadow-lg hover:bg-primary/90 transition-all">
-                Start Shopping
-              </Link>
-            </motion.div>
-          )}
+          {/* Orders Tab */}
+          {activeTab === "orders" && <OrderHistory />}
         </div>
       </div>
       <Footer />
