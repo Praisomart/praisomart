@@ -1,3 +1,4 @@
+import { API_BASE_URL, apiFetch } from "@/lib/api";
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
@@ -8,7 +9,6 @@ import {
 } from "lucide-react";
 import { useRef } from "react";
 import { toast } from "sonner";
-import { apiFetch } from "@/lib/api";
 import { useProducts } from "@/hooks/use-products";
 import { useCategories } from "@/hooks/use-categories";
 import { Trash2, Edit, Heart } from "lucide-react";
@@ -46,7 +46,7 @@ const ImageInputSelector = ({
         headers["Authorization"] = `Bearer ${token}`;
       }
 
-      const res = await fetch("/api/admin/upload", {
+      const res = await fetch(`${API_BASE_URL}/admin/upload`, {
         method: "POST",
         headers,
         body: formData
