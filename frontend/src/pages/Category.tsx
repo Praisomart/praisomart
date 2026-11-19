@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import { motion } from "framer-motion";
 import { Heart, ShoppingBag, Star, Eye } from "lucide-react";
 import categorySarees from "@/assets/category-sarees.jpg";
+import { resolveImageUrl } from "@/lib/image-url";
 
 const Category = () => {
   const { id } = useParams();
@@ -21,7 +22,7 @@ const Category = () => {
     name: p.name,
     price: p.price,
     originalPrice: p.discountPrice || p.price * 1.3,
-    image: p.mainImage || categorySarees,
+    image: p.mainImage ? resolveImageUrl(p.mainImage) : categorySarees,
     rating: p.rating || 4.5,
     tag: p.tag || (p.id % 2 === 0 ? "New" : "Bestseller"),
     defaultVariantId: p.defaultVariantId,

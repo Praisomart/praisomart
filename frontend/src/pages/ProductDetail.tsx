@@ -13,6 +13,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useReviews } from "@/hooks/use-reviews";
 import { useSuggestions } from "@/hooks/use-suggestions";
 import { apiFetch } from "@/lib/api";
+import { resolveImageUrl } from "@/lib/image-url";
 
 const ProductDetail = () => {
   const { id } = useParams();
@@ -200,7 +201,7 @@ const ProductDetail = () => {
         <div className="grid md:grid-cols-2 gap-12 lg:gap-24">
           <div className="rounded-3xl overflow-hidden aspect-[3/4] bg-secondary/20 border group relative">
             <img 
-              src={currentImage || productData.image || productData.mainImage || "https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&q=80"} 
+              src={resolveImageUrl(currentImage || productData.image || productData.mainImage) || "https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&q=80"}
               alt={productData.name} 
               className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
               onError={(e) => {
@@ -469,11 +470,11 @@ const ProductDetail = () => {
                       {review.imageUrl && (
                         <div className="mt-4 max-w-sm rounded-2xl overflow-hidden border bg-secondary/10 shadow-sm cursor-pointer hover:opacity-95 transition-opacity group">
                           <img
-                            src={review.imageUrl}
-                            alt="Attached review media"
-                            className="w-full max-h-60 object-cover"
-                            onClick={() => window.open(review.imageUrl, '_blank')}
-                          />
+  src={resolveImageUrl(review.imageUrl)}
+  alt="Attached review media"
+  className="w-full max-h-60 object-cover"
+  onClick={() => window.open(resolveImageUrl(review.imageUrl), '_blank')}
+/>
                         </div>
                       )}
 

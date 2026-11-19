@@ -1,11 +1,12 @@
 import { API_BASE_URL, apiFetch } from "@/lib/api";
+import { resolveImageUrl } from "@/lib/image-url";
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   LayoutDashboard, PackagePlus, List, LogOut, ChevronRight, Sparkles, 
   Upload, LayoutGrid, BarChart3, Tag, ArrowLeft, Users, ShoppingCart, 
   Search, X, Plus, Image as ImageIcon, CreditCard, Clock, CheckCircle2,
-  ChevronLeft, Images 
+  ChevronLeft, Images, Archive, RotateCcw
 } from "lucide-react";
 import { useRef } from "react";
 import { toast } from "sonner";
@@ -192,6 +193,7 @@ const Admin = () => {
     totalCustomers: 0
   });
   const [realOrders, setRealOrders] = useState<any[]>([]);
+  const [showArchivedOrders, setShowArchivedOrders] = useState(false);
   const [editingOrder, setEditingOrder] = useState<any>(null);
   const [trackingForm, setTrackingForm] = useState({
     trackingNumber: "",
@@ -234,16 +236,16 @@ const Admin = () => {
   useEffect(() => {
     if (activeTab === "dashboard") {
       fetchStats();
-      fetchRecentOrders();
+      fetchRecentOrders(false);
     } else if (activeTab === "orders") {
-      fetchRecentOrders();
+      fetchRecentOrders(showArchivedOrders);
     } else if (activeTab === "users") {
       fetchUsers();
     } else if (activeTab === "marketing") {
       fetchCoupons();
       fetchOffers();
     }
-  }, [activeTab]);
+  }, [activeTab, showArchivedOrders]);
 
   const fetchStats = async () => {
     try {
@@ -252,11 +254,31 @@ const Admin = () => {
     } catch (e) {}
   };
 
-  const fetchRecentOrders = async () => {
+  const fetchRecentOrders = async (archived = false) => {
     try {
-      const data = await apiFetch("/admin/dashboard/recent-orders");
+      const data = await apiFetch(`/admin/dashboard/recent-orders?archived=${archived}`);
       setRealOrders(data);
-    } catch (e) {}
+    } catch (e: any) {
+      toast.error(e.message || "Failed to load orders");
+    }
+  };
+
+  const handleArchiveOrder = async (orderId: number, archive: boolean) => {
+    const action = archive ? "archive" : "restore";
+
+    if (!window.confirm(`Are you sure you want to ${action} order #${orderId}?`)) {
+      return;
+    }
+
+    try {
+      await apiFetch(`/admin/dashboard/orders/${orderId}/${action}`, {
+        method: "PATCH"
+      });
+      toast.success(`Order #${orderId} ${archive ? "archived" : "restored"}.`);
+      fetchRecentOrders(showArchivedOrders);
+    } catch (e: any) {
+      toast.error(e.message || `Failed to ${action} order`);
+    }
   };
 
   const fetchUsers = async () => {
@@ -400,7 +422,7 @@ const Admin = () => {
       });
       toast.success("Order tracking details updated!");
       setEditingOrder(null);
-      fetchRecentOrders();
+      fetchRecentOrders(showArchivedOrders);
     } catch (e: any) {
       toast.error(e.message || "Failed to update tracking");
     }
@@ -408,6 +430,31 @@ const Admin = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!productData.name.trim()) {
+      toast.error("Enter a product name");
+      return;
+    }
+    if (!productData.color.trim()) {
+      toast.error("Select the product color");
+      return;
+    }
+    if (!productData.coverImage.trim()) {
+      toast.error("Add a cover image");
+      return;
+    }
+    if (!productData.variants.length) {
+      toast.error("Add at least one inventory variant");
+      return;
+    }
+    const invalidVariant = productData.variants.findIndex(
+      v => !v.color?.trim() || !Number.isFinite(Number(v.price)) || Number(v.price) <= 0
+    );
+    if (invalidVariant !== -1) {
+      toast.error(`Variant ${invalidVariant + 1}: select a color and enter a price greater than zero`);
+      return;
+    }
+
     setIsLoading(true);
     try {
       if (editingProduct) {
@@ -485,26 +532,61 @@ const Admin = () => {
     setProductData({ ...productData, variants: newVariants });
   };
 
-  const handleCoverImageDrop = (file: File) => {
-    const reader = new FileReader();
-    reader.onloadend = () => setProductData(prev => ({ ...prev, coverImage: reader.result as string }));
-    reader.readAsDataURL(file);
+  const uploadProductImage = async (file: File): Promise<string> => {
+    if (!file.type.startsWith("image/")) {
+      throw new Error(`${file.name}: select an image file`);
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      throw new Error(`${file.name}: image must be 5 MB or smaller`);
+    }
+
+    const formData = new FormData();
+    formData.append("file", file);
+
+    const token = localStorage.getItem("token");
+    const headers: Record<string, string> = {};
+    if (token) headers.Authorization = `Bearer ${token}`;
+
+    const response = await fetch(`${API_BASE_URL}/admin/upload`, {
+      method: "POST",
+      headers,
+      body: formData
+    });
+
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      throw new Error(data.message || data.error || `Upload failed for ${file.name}`);
+    }
+    if (!data.url || typeof data.url !== "string") {
+      throw new Error("Upload succeeded but the server did not return an image URL");
+    }
+    return data.url;
   };
 
-  const handleBulkGalleryUpload = (files: FileList) => {
-    const promises = Array.from(files).map(file => {
-      return new Promise<string>((resolve) => {
-        const reader = new FileReader();
-        reader.onloadend = () => resolve(reader.result as string);
-        reader.readAsDataURL(file);
-      });
-    });
-    Promise.all(promises).then(urls => {
-      setProductData(prev => ({ 
-        ...prev, 
-        galleryImages: [...prev.galleryImages, ...urls.map(url => ({ url, color: "" }))] 
+  const handleCoverImageDrop = async (file: File) => {
+    try {
+      const url = await uploadProductImage(file);
+      setProductData(prev => ({ ...prev, coverImage: url }));
+      toast.success("Cover image uploaded");
+    } catch (error: any) {
+      toast.error(error.message || "Cover image upload failed");
+    }
+  };
+
+  const handleBulkGalleryUpload = async (files: FileList) => {
+    const selectedFiles = Array.from(files);
+    if (!selectedFiles.length) return;
+
+    try {
+      const urls = await Promise.all(selectedFiles.map(uploadProductImage));
+      setProductData(prev => ({
+        ...prev,
+        galleryImages: [...prev.galleryImages, ...urls.map(url => ({ url, color: "" }))]
       }));
-    });
+      toast.success(`${urls.length} gallery image(s) uploaded`);
+    } catch (error: any) {
+      toast.error(error.message || "Gallery upload failed");
+    }
   };
 
   const removeGalleryImage = (index: number) => {
@@ -889,7 +971,7 @@ const Admin = () => {
                         >
                           {productData.coverImage ? (
                             <>
-                              <img src={productData.coverImage} className="w-full h-full object-cover" />
+                              <img src={resolveImageUrl(productData.coverImage)} className="w-full h-full object-cover" />
                               <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                                 <Upload size={24} className="text-white" />
                                 <span className="text-white text-xs font-bold ml-2">Replace</span>
@@ -1012,7 +1094,7 @@ const Admin = () => {
                               {productData.galleryImages.map((img, i) => (
                                 <div key={i} className="flex-shrink-0 w-48 group">
                                   <div className="aspect-square rounded-2xl overflow-hidden relative border shadow-sm">
-                                    <img src={img.url} className="w-full h-full object-cover" />
+                                    <img src={resolveImageUrl(img.url)} className="w-full h-full object-cover" />
                                     <button 
                                       type="button"
                                       onClick={() => removeGalleryImage(i)}
@@ -1277,10 +1359,29 @@ const Admin = () => {
 
               {activeTab === "orders" && (
                 <div className="bg-card border p-8 rounded-[2.5rem] shadow-sm space-y-6">
-                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
+                  <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 mb-4">
                     <div>
                       <h3 className="font-display text-2xl font-bold">Order Fulfilment</h3>
-                      <p className="text-sm text-muted-foreground">Manage shipping courier, tracking details, and delivery statuses</p>
+                      <p className="text-sm text-muted-foreground">Manage shipping, tracking, and archived orders</p>
+                    </div>
+                    <div className="flex items-center gap-2 p-1 rounded-xl bg-secondary/60 border">
+                      <button
+                        onClick={() => setShowArchivedOrders(false)}
+                        className={`px-4 py-2 rounded-lg text-xs font-bold transition-colors ${
+                          !showArchivedOrders ? "bg-background text-primary shadow-sm" : "text-muted-foreground hover:text-foreground"
+                        }`}
+                      >
+                        Active Orders
+                      </button>
+                      <button
+                        onClick={() => setShowArchivedOrders(true)}
+                        className={`px-4 py-2 rounded-lg text-xs font-bold transition-colors ${
+                          showArchivedOrders ? "bg-background text-primary shadow-sm" : "text-muted-foreground hover:text-foreground"
+                        }`}
+                      >
+                        <Archive size={14} className="inline mr-1" />
+                        Archived
+                      </button>
                     </div>
                   </div>
 
@@ -1299,7 +1400,13 @@ const Admin = () => {
                         </tr>
                       </thead>
                       <tbody className="divide-y text-sm">
-                        {realOrders.map((order) => (
+                        {realOrders.length === 0 ? (
+                          <tr>
+                            <td colSpan={8} className="py-12 text-center text-muted-foreground">
+                              {showArchivedOrders ? "No archived orders." : "No active orders."}
+                            </td>
+                          </tr>
+                        ) : realOrders.map((order) => (
                           <tr key={order.id} className="hover:bg-secondary/20 transition-colors">
                             <td className="py-4 px-2 font-mono font-bold text-primary">#{order.id}</td>
                             <td className="py-4 px-2">
@@ -1334,19 +1441,34 @@ const Admin = () => {
                               )}
                             </td>
                             <td className="py-4 px-2 text-right">
-                              <button
-                                onClick={() => {
-                                  setEditingOrder(order);
-                                  setTrackingForm({
-                                    trackingNumber: order.trackingNumber || "",
-                                    courierService: order.courierService || "",
-                                    status: order.status || "PENDING"
-                                  });
-                                }}
-                                className="px-4 py-2 bg-primary/5 text-primary hover:bg-primary hover:text-primary-foreground font-bold rounded-xl text-xs transition-all"
-                              >
-                                Edit Tracking
-                              </button>
+                              <div className="flex items-center justify-end gap-2">
+                                {!showArchivedOrders && (
+                                  <button
+                                    onClick={() => {
+                                      setEditingOrder(order);
+                                      setTrackingForm({
+                                        trackingNumber: order.trackingNumber || "",
+                                        courierService: order.courierService || "",
+                                        status: order.status || "PENDING"
+                                      });
+                                    }}
+                                    className="px-3 py-2 bg-primary/5 text-primary hover:bg-primary hover:text-primary-foreground font-bold rounded-xl text-xs transition-all"
+                                  >
+                                    Edit Tracking
+                                  </button>
+                                )}
+                                <button
+                                  onClick={() => handleArchiveOrder(order.id, !showArchivedOrders)}
+                                  title={showArchivedOrders ? "Restore order" : "Archive order"}
+                                  className={`p-2 rounded-xl transition-colors ${
+                                    showArchivedOrders
+                                      ? "text-emerald-700 bg-emerald-50 hover:bg-emerald-100"
+                                      : "text-muted-foreground bg-secondary hover:text-foreground"
+                                  }`}
+                                >
+                                  {showArchivedOrders ? <RotateCcw size={16} /> : <Archive size={16} />}
+                                </button>
+                              </div>
                             </td>
                           </tr>
                         ))}

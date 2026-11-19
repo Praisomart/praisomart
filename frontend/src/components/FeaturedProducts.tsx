@@ -6,6 +6,7 @@ import categorySarees from "@/assets/category-sarees.jpg";
 import categoryTops from "@/assets/category-tops.jpg";
 
 import { useProducts } from "@/hooks/use-products";
+import { resolveImageUrl } from "@/lib/image-url";
 import { useCart } from "@/hooks/use-cart";
 import { useWishlist } from "@/hooks/use-wishlist";
 
@@ -27,7 +28,7 @@ const FeaturedProducts = () => {
     name: p.name,
     price: p.price,
     originalPrice: p.discountPrice || p.price * 1.3, // Mock original price if not provided
-    image: p.image || categorySarees,
+    image: p.image ? resolveImageUrl(p.image) : categorySarees,
     rating: p.rating || 4.5,
     tag: p.tag || (p.id % 2 === 0 ? "New" : "Bestseller"),
     defaultVariantId: p.defaultVariantId, // Set in the DTO

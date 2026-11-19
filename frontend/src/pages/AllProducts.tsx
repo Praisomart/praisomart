@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
 import { Heart, ShoppingBag, Star, Eye, SlidersHorizontal, X, ChevronDown, Grid3X3, LayoutList, Search, ArrowUpDown } from "lucide-react";
 import categorySarees from "@/assets/category-sarees.jpg";
+import { resolveImageUrl } from "@/lib/image-url";
 
 const SORT_OPTIONS = [
   { value: "newest", label: "Newest First" },
@@ -52,7 +53,7 @@ const AllProducts = () => {
       name: p.name,
       price: p.price,
       originalPrice: p.discountPrice || Math.round(p.price * 1.3),
-      image: p.image || p.mainImage || categorySarees,
+      image: p.image || p.mainImage ? resolveImageUrl(p.image || p.mainImage) : categorySarees,
       rating: p.rating || 4.5,
       color: p.color || "",
       categoryName: p.categoryName || "",
