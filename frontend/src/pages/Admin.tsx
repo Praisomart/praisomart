@@ -275,11 +275,46 @@ const Admin = () => {
         method: "PATCH"
       });
       toast.success(`Order #${orderId} ${archive ? "archived" : "restored"}.`);
-      fetchRecentOrders(showArchivedOrders);
+      await Promise.all([
+        fetchRecentOrders(showArchivedOrders),
+        fetchStats()
+      ]);
     } catch (e: any) {
       toast.error(e.message || `Failed to ${action} order`);
     }
   };
+
+  const handleDeleteOrder = async (orderId: number, customerName?: string) => {
+    if (!showArchivedOrders) {
+      toast.error("Only archived orders can be permanently deleted.");
+      return;
+    }
+
+    if (!Number.isFinite(orderId) || orderId <= 0) {
+      toast.error("Invalid order ID");
+      return;
+    }
+
+    if (!window.confirm(
+      `PERMANENTLY DELETE order #${orderId} belonging to ${customerName || "this customer"}? This cannot be undone.`
+    )) return;
+
+    try {
+      await apiFetch(`/admin/dashboard/orders/${orderId}`, {
+        method: "DELETE"
+      });
+
+      toast.success(`Order #${orderId} permanently deleted.`);
+      await Promise.all([
+        fetchRecentOrders(showArchivedOrders),
+        fetchStats()
+      ]);
+    } catch (e: any) {
+      console.error("Failed to delete order:", e);
+      toast.error(e?.message || "Failed to permanently delete order");
+    }
+  };
+
 
   const fetchUsers = async () => {
     setUsersLoading(true);
@@ -1468,6 +1503,16 @@ const Admin = () => {
                                 >
                                   {showArchivedOrders ? <RotateCcw size={16} /> : <Archive size={16} />}
                                 </button>
+                                {showArchivedOrders && currentUser?.role === "ADMIN" && (
+                                  <button
+                                    type="button"
+                                    onClick={() => handleDeleteOrder(order.id, order.user?.name)}
+                                    title="Permanently delete archived order"
+                                    className="p-2 rounded-xl text-red-600 bg-red-50 hover:bg-red-100 transition-colors"
+                                  >
+                                    <Trash2 size={16} />
+                                  </button>
+                                )}
                               </div>
                             </td>
                           </tr>
